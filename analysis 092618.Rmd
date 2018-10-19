@@ -158,6 +158,31 @@ for(i in 1:nrow(alldata)) {
                                     ifelse(alldata$numpos[i]==1,"Single ab positive","Multiple ab positive")))
 }
 
+#-------------------------------------------------------------------------------
+# Tim's group status code.
+# Separate table for diagnosis.
+diagnosis.table <- alldata[,c("Random_ID","group")]
+# Count diagnoses per subject
+counts <- plyr::count(diagnosis.table,c("Random_ID","group"))
+# Find participants with only one single ab+
+single <- counts[counts$group == "Single ab positive",]
+single <- single[single$freq < 2,"Random_ID"]
+# Convert group to numeric
+diagnosis.table$group <- 
+  plyr::revalue(diagnosis.table$group,c("Negative" = 0,"Single ab positive" = 1,
+                                        "Multiple ab positive" = 2,"T1D" = 3))
+diagnosis.table$group <- as.numeric(diagnosis.table$group)
+# Aggregate diagnosis table taking the maximum value.
+diagnosis.table <- aggregate(group ~ Random_ID, data = diagnosis.table, max)
+# Find the single ab+ who were incorrectly categorized, set back to 0.
+recat <- single[
+  which(single %in% diagnosis.table[diagnosis.table$group == 1,"Random_ID"])]
+diagnosis.table[diagnosis.table$Random_ID %in% recat,"group"] <- 0
+colnames(diagnosis.table) <- c("Random_ID","final.group")
+# Merge the diagnosis back into the full table.
+alldata <- merge(alldata,diagnosis.table,by = "Random_ID")
+#-------------------------------------------------------------------------------
+
 # pull out T1D - if they have T1D at any time point, they are in the T1D group
 t1d <- alldata[alldata$T1D == "Yes",]
 t1d <- t1d[order(t1d$Random_ID, t1d$Draw_Date),]
