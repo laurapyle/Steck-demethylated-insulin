@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(lubridate)
 library(graphics)
+library(ggplot2)
 
 # read in the data
 longitudinal_visit_info <- read.csv("\\\\ucdenver.pvt\\som-home\\pylell\\BDC\\Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\longitudinal 091818.csv")
@@ -145,12 +146,6 @@ alldata <- alldata[is.na(alldata$flag),]
 missingt1d <- alldata[is.na(alldata$T1D),]
 # no one is missing t1d status
 
-# spaghetti plots of outcomes
-alldata <- alldata[order(alldata$Random_ID,alldata$Draw_Date),]
-alldata$time <- alldata$Draw_Date - alldata$Draw_Date[1]
-units(alldata$time) <- "days"
-interaction.plot(x.factor = alldata$time, trace.factor = alldata$Random_ID, response=alldata$Pro_pep)
-
 # group status at each visit - but people can change groups
 for(i in 1:nrow(alldata)) {
   alldata$group[i] <- ifelse(alldata$T1D[i]=="Yes","T1D",
@@ -191,69 +186,27 @@ nont1d <- alldata[alldata$T1D != "Yes",]
 nont1d <- nont1d[order(nont1d$Random_ID, nont1d$Draw_Date),]
 # total of 132 subjects, 15 in T1D and 117 nonT1D
 
-###counting number of nont1d patients who changed status over draw dates
-###by_patient is the function name, and it takes in the id variable and the dataset name as arguments
-by_patient<-function(ID,data){
-  #for each unique ID in the dataset,
-  temp<-lapply(unique(ID), function(x){
-    #create a dat.temp that subsets the data by id. 
-    dat.temp <- subset(data, ID == x)
-    #dat.temp<-subset(nont1d,nont1d$Random_ID==146158)
-    #this creates a new variable called row num and counts the visit number
-    dat.temp$row_num<-rep(1:nrow(dat.temp))
-    #this creates the total number of visits for patient x 
-    dat.temp$visit_total<-max(dat.temp$row_num,na.rm=T)
-    ###new code
-    tab<-table(dat.temp$group)
-    dimension<-dim(tab)
-    dat.temp$change<-0
-    dat.temp$change[dimension>1]<-1
-    dat.temp
-   #  count <- 0
-   # for(i in 1:nrow(dat.temp)){
-   #  if(dat.temp$group[i]!= dat.temp$group[i-1]) count = count +1
-   #  }
-   #  dat.temp$count<- count
-    dat.temp
-  })
-  #this binds together all of the mini patient datasets
-  dat<-do.call(rbind,temp)
-}
-
-#use this to call the function - 
-dat.final<- by_patient (nont1d$Random_ID,nont1d)
-
-check <- c("Random_ID","Draw_Date","group","change")
-View(dat.final[check])
-
-##create a table of how many patients changed and didn't
-nont1d_changes <- dat.final%>% 
-  group_by(Random_ID) %>%
-  filter(row_number(Draw_Date)==1)
-table(nont1d_changes$change)
-# 56 did not change, 61 did change
-
-# classify people into the group at their earliest visit
-nont1d_earliest <- nont1d%>% 
-  group_by(Random_ID) %>%
-  filter(row_number(Draw_Date)==1)
-table(nont1d_earliest$group)
-#Multiple ab positive             Negative   Single ab positive 
-#                  16                   34                   67 
-
-# classify people into the group at their last visit
-nont1d_latest <- nont1d%>% 
-  group_by(Random_ID) %>%
-  filter(row_number(Draw_Date)==n())
-table(nont1d_latest$group)
-#Multiple ab positive             Negative   Single ab positive 
-#                  25                   36                   56 
-
 # counting number of INS ratios and proinsulin ratios per person
 a <- nont1d %>% group_by(Random_ID) %>% filter(!is.na(Proinsulin_pM_L)) %>% summarize(count=n())
 # range from 1 proinsulin ratio to 9
 b <- nont1d %>% group_by(Random_ID) %>% filter(!is.na(U_MplusU_Ratio_Zen)) %>% summarize(count=n())
 # range rom 1 INS ratio to 3
+
+# spaghetti plots of outcomes
+alldata <- alldata[order(alldata$Random_ID,alldata$Draw_Date),]
+alldata$time <- alldata$Draw_Date - alldata$Draw_Date[1]
+units(alldata$time) <- "days"
+alldata$time <- round(alldata$time/365.25,digits=1)
+p <- ggplot(data=alldata[alldata$time>=9,], aes(x=as.factor(time), y=Pro_pep, group=as.factor(Random_ID)))
+p + aes(colour=as.factor(final.group))
+p + geom_point()
+p + geom_line()
+print(p)
+
+z <- ggplot(data=alldata[alldata$time>=9,], aes(x=as.factor(time[alldata$time>=9]), y=U_MplusU_Ratio_Zen, group=as.factor(Random_ID)))
+z + geom_point()
+z + geom_line()
+print(z)
 
 # stopped here
 
