@@ -156,7 +156,9 @@ for(i in 1:nrow(alldata)) {
 #-------------------------------------------------------------------------------
 # Tim's group status code.
 # Separate table for diagnosis.
-diagnosis.table <- alldata[,c("Random_ID","group")]
+diagnosis.table <- alldata[,c("Random_ID","Draw_Date","group")]
+# save a copy of this data to merge back with the final dx
+allresults <- diagnosis.table
 # Count diagnoses per subject
 counts <- plyr::count(diagnosis.table,c("Random_ID","group"))
 # Find participants with only one single ab+
@@ -174,6 +176,13 @@ recat <- single[
   which(single %in% diagnosis.table[diagnosis.table$group == 1,"Random_ID"])]
 diagnosis.table[diagnosis.table$Random_ID %in% recat,"group"] <- 0
 colnames(diagnosis.table) <- c("Random_ID","final.group")
+
+
+# merge final group category with all results
+allresults <- merge(allresults,diagnosis.table,by="Random_ID")
+# make categorical variable for final group
+allresults$final.group <- plyr::revalue(allresults$final.group,c(0="Negative", 1="Single ab positive",2="Multiple ab positive",3="T1D"))
+
 # Merge the diagnosis back into the full table.
 alldata <- merge(alldata,diagnosis.table,by = "Random_ID")
 #-------------------------------------------------------------------------------
@@ -208,7 +217,14 @@ z + geom_point()
 z + geom_line()
 print(z)
 
-# stopped here
+# now need to determine which INS ratio/proinsulin ratio to use for cross-sectional analyses
+# T1D: results closest to T1D onset (i.e., within 2 months)
+# Multiple ab positive: results closest to multiple ab positivity
+# single ab positive: results at time of confirmation
+# negative: use most recent
+# if anyone has more than one set of results that meets the above criteria, take the most recent result
+
+
 
 
 
