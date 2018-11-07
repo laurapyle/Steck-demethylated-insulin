@@ -181,7 +181,8 @@ colnames(diagnosis.table) <- c("Random_ID","final.group")
 # merge final group category with all results
 allresults <- merge(allresults,diagnosis.table,by="Random_ID")
 # make categorical variable for final group
-allresults$final.group <- plyr::revalue(allresults$final.group,c(0="Negative", 1="Single ab positive",2="Multiple ab positive",3="T1D"))
+# BELOW DOES NOT WORK - WILL NEED TO FIX
+#allresults$final.group <- plyr::revalue(allresults$final.group,c(0 = "Negative", 1 = "Single ab positive",2 = "Multiple ab positive",3 ="T1D"))
 
 # Merge the diagnosis back into the full table.
 alldata <- merge(alldata,diagnosis.table,by = "Random_ID")
@@ -203,6 +204,10 @@ b <- nont1d %>% group_by(Random_ID) %>% filter(!is.na(U_MplusU_Ratio_Zen)) %>% s
 
 # spaghetti plots of outcomes
 alldata <- alldata[order(alldata$Random_ID,alldata$Draw_Date),]
+# BELOW DOES NOT WORK BECAUSE IT IS FINDING THE FIRST DRAW DATE ACROSS ALL PATIENTS!
+alldata$first <- alldata %>% group_by(Random_ID) %>% first(alldata$Draw_Date)
+alldata$first <- mdy(as.character(alldata$first))
+  alldata$Draw_Date - alldata$Draw_Date[1]
 alldata$time <- alldata$Draw_Date - alldata$Draw_Date[1]
 units(alldata$time) <- "days"
 alldata$time <- round(alldata$time/365.25,digits=1)
