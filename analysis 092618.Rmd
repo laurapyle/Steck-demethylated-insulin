@@ -181,8 +181,10 @@ colnames(diagnosis.table) <- c("Random_ID","final.group")
 # merge final group category with all results
 allresults <- merge(allresults,diagnosis.table,by="Random_ID")
 # make categorical variable for final group
-# BELOW DOES NOT WORK - WILL NEED TO FIX
-#allresults$final.group <- plyr::revalue(allresults$final.group,c(0 = "Negative", 1 = "Single ab positive",2 = "Multiple ab positive",3 ="T1D"))
+allresults$final.group[allresults$final.group==0] <- "Negative"
+allresults$final.group[allresults$final.group==1] <- "Single ab positive"
+allresults$final.group[allresults$final.group==2] <- "Multiple ab positive"
+allresults$final.group[allresults$final.group==3] <- "T1D"
 
 # Merge the diagnosis back into the full table.
 alldata <- merge(alldata,diagnosis.table,by = "Random_ID")
@@ -200,27 +202,28 @@ nont1d <- nont1d[order(nont1d$Random_ID, nont1d$Draw_Date),]
 a <- nont1d %>% group_by(Random_ID) %>% filter(!is.na(Proinsulin_pM_L)) %>% summarize(count=n())
 # range from 1 proinsulin ratio to 9
 b <- nont1d %>% group_by(Random_ID) %>% filter(!is.na(U_MplusU_Ratio_Zen)) %>% summarize(count=n())
-# range rom 1 INS ratio to 3
+# range from 1 INS ratio to 3
+
+# find the first draw date
+alldata <- alldata[order(alldata$Random_ID,alldata$Draw_Date),]
+temp <- aggregate(alldata$Draw_Date,by=list(alldata$Random_ID),min)
+names(temp) <- c("Random_ID","first_date")
+temp$first_date <- as.Date(temp$first_date)
+alldata <- merge(alldata,temp,by = "Random_ID")
+alldata$Draw_Date <- as.Date(alldata$Draw_Date)
+alldata$time <- alldata$Draw_Date - alldata$first_date
+alldata$years <- alldata$time/365.25
+
+# check range of years for non-missing pro-pep
+a <- alldata[!is.na(alldata$Pro_pep),]
+hist(as.numeric(a$years))
+b <- alldata[!is.na(alldata$U_MplusU_Ratio_Zen),]
+hist(as.numeric(b$years))
 
 # spaghetti plots of outcomes
-alldata <- alldata[order(alldata$Random_ID,alldata$Draw_Date),]
-# BELOW DOES NOT WORK BECAUSE IT IS FINDING THE FIRST DRAW DATE ACROSS ALL PATIENTS!
-alldata$first <- alldata %>% group_by(Random_ID) %>% first(alldata$Draw_Date)
-alldata$first <- mdy(as.character(alldata$first))
-  alldata$Draw_Date - alldata$Draw_Date[1]
-alldata$time <- alldata$Draw_Date - alldata$Draw_Date[1]
-units(alldata$time) <- "days"
-alldata$time <- round(alldata$time/365.25,digits=1)
-p <- ggplot(data=alldata[alldata$time>=9,], aes(x=as.factor(time), y=Pro_pep, group=as.factor(Random_ID)))
-p + aes(colour=as.factor(final.group))
-p + geom_point()
-p + geom_line()
-print(p)
+qplot(years,Pro_pep,data=alldata,group=Random_ID,color=group,geom="line")
+qplot(years,U_MplusU_Ratio_Zen,data=alldata,group=Random_ID,color=group,geom="line")
 
-z <- ggplot(data=alldata[alldata$time>=9,], aes(x=as.factor(time[alldata$time>=9]), y=U_MplusU_Ratio_Zen, group=as.factor(Random_ID)))
-z + geom_point()
-z + geom_line()
-print(z)
 
 # now need to determine which INS ratio/proinsulin ratio to use for cross-sectional analyses
 # T1D: results closest to T1D onset (i.e., within 2 months)
