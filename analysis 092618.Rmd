@@ -224,17 +224,71 @@ hist(as.numeric(b$years))
 qplot(years,Pro_pep,data=alldata,group=Random_ID,color=group,geom="line")
 qplot(years,U_MplusU_Ratio_Zen,data=alldata,group=Random_ID,color=group,geom="line")
 
-
 # now need to determine which INS ratio/proinsulin ratio to use for cross-sectional analyses
 # T1D: results closest to T1D onset (i.e., within 2 months)
-# Multiple ab positive: results closest to multiple ab positivity
-# single ab positive: results at time of confirmation
+alldata$Date_of_Diagnosis <- as.Date(mdy(alldata$Date_of_Diagnosis))
+alldata$timec[alldata$final.group==3] <- alldata$Draw_Date[alldata$final.group==3] - alldata$Date_of_Diagnosis[alldata$final.group==3]
+t1d <- alldata[alldata$T1D == "Yes",]
+t1d <- t1d[order(t1d$Random_ID, t1d$Draw_Date),]
+# pull out records with non-missing Pro_pep
+t1d_select_pro <- t1d[!is.na(t1d$Pro_pep),]
+length(unique(t1d_select_pro$Random_ID))
+t1d_select_pro <- t1d_select_pro[abs(t1d_select_pro$timec)<=60,]
+length(unique(t1d_select_pro$Random_ID))
+# lose 5 people if we require pro_pep within 2 months (same for 3 months)
+# pull out records with nonmissing ins ratio
+t1d_select_ins <- t1d[!is.na(t1d$U_MplusU_Ratio_Zen),]
+length(unique(t1d_select_ins$Random_ID))
+t1d_select_ins <- t1d_select_ins[abs(t1d_select_ins$timec)<=60,]
+length(unique(t1d_select_ins$Random_ID))
+# lose 5 people if we require INS ratio within 2 months
+  
 # negative: use most recent
+neg <- alldata[alldata$final.group==0,]
+neg <- neg[order(neg$Random_ID, neg$Draw_Date),]
+# pull out records with nonmissing propep
+neg_select_pro <- neg[!is.na(neg$Pro_pep),]
+# select the most recent record for each person
+temp <- aggregate(neg_select_pro$Draw_Date,by=list(neg_select_pro$Random_ID),max)
+names(temp) <- c("Random_ID","most_recent_draw")
+temp$most_recent_draw <- as.Date(temp$most_recent_draw)
+neg_select_pro <- merge(neg_select_pro,temp,by = "Random_ID")
+length(unique(neg_select_pro$Random_ID))
+neg_select_pro <- neg_select_pro[neg_select_pro$Draw_Date==neg_select_pro$most_recent_draw,]
+# pull out records with nonmissing ins ratio
+neg_select_ins <-neg[!is.na(neg$U_MplusU_Ratio_Zen),]
+# select the most recent record for each person
+temp <- aggregate(neg_select_ins$Draw_Date,by=list(neg_select_ins$Random_ID),max)
+names(temp) <- c("Random_ID","most_recent_draw")
+temp$most_recent_draw <- as.Date(temp$most_recent_draw)
+neg_select_ins <- merge(neg_select_ins,temp,by = "Random_ID")
+neg_select_ins <- neg_select_ins[neg_select_ins$Draw_Date==neg_select_ins$most_recent_draw,]
+
+# Multiple ab positive: results closest to multiple ab positivity
+# if anyone has more than one set of results that meets the above criteria, take the most recent result
+# first need to find the first date of multiple ab positivity
+mult <- alldata[alldata$final.group==2,]
+mult <- mult[order(mult$Random_ID, mult$Draw_Date),]
+mult_find_first <- mult[mult$group=="Multiple ab positive",]
+mult_find_first <- aggregate(mult_find_first$Draw_Date,by=list(mult_find_first$Random_ID),min)
+names(mult_find_first) <- c("Random_ID","first_mult_date")
+mult <- merge(mult,mult_find_first,by="Random_ID")
+# calculate difference between draw date and date of multiple ab positivity
+mult$timec <- mult$Draw_Date - mult$first_mult_date
+View(mult[c("Random_ID","group","final.group","Draw_Date","first_mult_date","timec")])
+# pull out records with non-missing Pro_pep
+mult_select_pro <- mult[!is.na(mult$Pro_pep),]
+length(unique(mult_select_pro$Random_ID))
+mult_select_pro <- mult_select_pro[abs(mult_select_pro$timec)<=60,]
+length(unique(mult_select_pro$Random_ID))
+
+# single ab positive: results at time of confirmation
 # if anyone has more than one set of results that meets the above criteria, take the most recent result
 
-
-
-
+# combine the results for the pro-pep analysis
+allpro <- rbind(t1d_select_pro,neg_select_pro,mult_select_pro,sing_select_pro)
+# combine the results for the INS analysis
+allins <- rbind(t1d_select_ins,neg_select_ins,mult_select_ins,sing_select_ins)
 
 
 
