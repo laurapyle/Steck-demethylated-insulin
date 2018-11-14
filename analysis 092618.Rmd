@@ -207,6 +207,7 @@ allresults$final.group[allresults$final.group==1] <- "Single ab positive"
 allresults$final.group[allresults$final.group==2] <- "Multiple ab positive"
 allresults$final.group[allresults$final.group==3] <- "T1D"
 
+
 # Merge the diagnosis back into the full table.
 alldata <- merge(alldata,diagnosis.table,by = "Random_ID")
 #-------------------------------------------------------------------------------
@@ -241,6 +242,17 @@ qplot(years,U_MplusU_Ratio_Zen,data=alldata,group=Random_ID,color=group,geom="li
 # T1D: results closest to T1D onset 
 alldata$Date_of_Diagnosis <- as.Date(mdy(alldata$Date_of_Diagnosis))
 alldata$timec[alldata$final.group==3] <- abs(alldata$Draw_Date[alldata$final.group==3] - alldata$Date_of_Diagnosis[alldata$final.group==3])
+
+# create labeled factor for final.group
+#check <- alldata %>% distinct(Random_ID, .keep_all=TRUE)
+#table(check$final.group)
+alldata$final.group <- as.factor(alldata$final.group)
+#check <- alldata %>% distinct(Random_ID, .keep_all=TRUE)
+#table(check$final.group)
+levels(alldata$final.group) = c("Negative","Single ab positive","Multiple ab positive","T1D")
+#check <- alldata %>% distinct(Random_ID, .keep_all=TRUE)
+#table(check$final.group)
+
 # pull out T1D - if they have T1D at any time point, they are in the T1D group
 t1d <- alldata[alldata$T1D == "Yes",]
 t1d <- t1d[order(t1d$Random_ID, t1d$Draw_Date),]
@@ -354,7 +366,7 @@ summary(lm.ins)
 anova(lm.ins)
 TukeyHSD(lm.ins)
 
-tab_ins <- final_table(allins,'U_MplusU_Ratio_Zen',group=as.factor(allins$final.group),margin=2,single=0,ron=2)
+tab_ins <- final_table(allins,'U_MplusU_Ratio_Zen',group=allins$final.group,margin=2,single=0,ron=2)
 
 # do ins ratios correlate with biochemical and ECL antibody levels
 # ++++++++++++++++++++++++++++
@@ -436,7 +448,7 @@ The following data manipulation and cleaning steps were performed:
 11) If a participant was not in the T1D group, they were classfied by antibody status as below.  This resulted in `r length(unique(t1d$Random_ID))` participants in the T1D group, `r nmult` participants in the multiple antibody positive group, `r nsing` participants in the single antibody positive group, and `r nneg` participants in the negative group.
 + If they were multiple antibody positive at any visit, they were classified as multiple antibody positive.
 + If they were never multiple antibody positive, but were single antibody positive at 2 or more visits, they were classified as single antibody positive.
-+ Otherwise, they were classifed as antibody negative.
++ Otherwise, they were classified as antibody negative.
 12) For cross-sectional analyses, unmethylated INS ratios and proinsulin ratios were selected as follows:
 + For the T1D group, the result closest to the date of diagnosis was used.
 + For all other groups, the most recent result was used.
