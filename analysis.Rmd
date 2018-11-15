@@ -79,12 +79,11 @@ alldata$DR3DR4[!(alldata$DR3=="PRESENT" & alldata$DR4=="PRESENT")] <- "ABSENT"
 
 # combine race/ethnicity
 alldata$race_eth <- NA
-alldata$race_eth[(alldata$Race=="White" && alldata$Ethnicity=="Non-Hispanic origin")]  <- "NHW"
+alldata$race_eth[(alldata$Race=="White" & alldata$Ethnicity=="Non-Hispanic origin")]  <- "NHW"
 alldata$race_eth[(alldata$Race=="White" & alldata$Ethnicity=="Non-Hispanic White")] <- "NHW"
 alldata$race_eth[(alldata$Race=="White" & alldata$Ethnicity == "Not Hispanic or Latino")] <- "NHW"
 alldata$race_eth[alldata$Ethnicity=="Hispanic" | alldata$Ethnicity=="Hispanic or Latino" | alldata$Ethnicity=="Hispanic/Latino/Spanish origin"] <- "Hispanic"
 alldata$race_eth[is.na(alldata$race_eth)] <- "Other"
-
 
 
 # labels
@@ -179,15 +178,28 @@ alldata$ia2hz <- (alldata$IA_2H - mean(alldata$IA_2H,na.rm = TRUE))/sd(alldata$I
 alldata$ia2z <- ifelse(!is.na(alldata$ICA512),alldata$ica512z,alldata$ia2hz)
 
 # need to find out if anyone is missing proinsulin ratio at all visits
-sortds <- alldata[order(alldata$Random_ID,desc(alldata$Proinsulin_pM_L)),]
+sortds <- alldata[order(alldata$Random_ID,desc(alldata$Pro_pep)),]
 hasproins <- sortds %>% group_by(Random_ID) %>% filter(row_number(Random_ID) == 1)
-a <- hasproins[is.na(hasproins$Proinsulin_pM_L),]
+a <- hasproins[is.na(hasproins$Pro_pep),]
 a <- a[,1]
 misspro <- nrow(a)
 a$flag <- rep(1,nrow(a))
-# 12 subjects missing proinsulin - need to merge this back with original dataset and take those people out
+# 46 subjects missing proinsulin - need to merge this back with original dataset and take those people out
 # keep only those IDs that are in both dataframes
 alldata <- merge(alldata,a,all.x=TRUE,by="Random_ID")
+alldata <- alldata[is.na(alldata$flag),]
+
+# need to find out if anyone is missing INS ratio at all visits
+# THIS DOESN'T WORK - TAKES EVERYONE OUT!
+sortds <- alldata[order(alldata$Random_ID,desc(alldata$U_MplusU_Ratio_Zen)),]
+hasins <- sortds %>% group_by(Random_ID) %>% filter(row_number(Random_ID) == 1)
+b <- hasins[is.na(hasins$U_MplusU_Ratio_Zen),]
+b <- b[,1]
+missins <- nrow(b)
+b$flag <- rep(1,nrow(b))
+# subjects missing INS ratio - need to merge this back with original dataset and take those people out
+# keep only those IDs that are in both dataframes
+alldata <- merge(alldata,b,all.x=TRUE,by="Random_ID")
 alldata <- alldata[is.na(alldata$flag),]
 
 # who is missing T1D data?
