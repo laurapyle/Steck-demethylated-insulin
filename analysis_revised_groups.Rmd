@@ -331,10 +331,23 @@ names(temp) <- c("Random_ID","time_from_diagnosis")
 t1d_select_pro <- merge(t1d_select_pro,temp,by = "Random_ID")
 t1d_select_pro <- t1d_select_pro[t1d_select_pro$time_from_diagnosis==t1d_select_pro$timec,]
 
+# now if the proinsulin value closest to dx is not within 3 months, need to use group at the time of proinsulin
+for(i in 1:nrow(t1d_select_pro)) {
+  t1d_select_pro$newgroup[i] <- ifelse(t1d_select_pro$time_from_diagnosis[i]<=90, "T1D",    
+                                   ifelse(t1d_select_pro$numpos[i]==0,"Negative",
+                                    ifelse(t1d_select_pro$numpos[i]==1,"Single ab positive","Multiple ab positive")))
+}
+
 # for negative, single ab positive, multiple ab positive: use most recent
+# UNLESS SUBJECT IS NOT IN THAT CATEGORY AT THAT TIME
 # pull out records with nonmissing propep
 nont1d_select_pro <- nont1d[!is.na(nont1d$Pro_pep),]
 check <- nont1d_select_pro %>% distinct(Random_ID, .keep_all=TRUE)
+# keep only records where current group = final group
+nont1d_select_pro <- nont1d_select_pro[nont1d_select_pro$group == nont1d_select_pro$final.group,]
+check2 <- nont1d_select_pro %>% distinct(Random_ID, .keep_all=TRUE)
+# PROBLEM - THERE MAY NOT BE A PROINSULIN RATIO FROM THE SAME VISIT AT WHICH THE PERSON WAS IN THE FINAL GROUP
+
 # select the most recent record for each person
 temp <- aggregate(nont1d_select_pro$Draw_Date,by=list(nont1d_select_pro$Random_ID),max)
 names(temp) <- c("Random_ID","most_recent_draw")
