@@ -14,12 +14,14 @@ library(lubridate)
 library(graphics)
 library(ggplot2)
 library(Hmisc)
-library(Table1)
+#library(Table1)
 library(knitr)
 
 # read in the data
 longitudinal_visit_info <- read.csv("\\\\ucdenver.pvt\\som-home\\pylell\\BDC\\Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\longitudinal 091818.csv")
 ParticipantInfo_risk <- read.csv("\\\\ucdenver.pvt\\som-home\\pylell\\BDC\\Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\Participant Info risk 091818.csv",na.strings = c("NA"," ","","      "))
+
+source("C:\\Users\\pylell\\Documents\\GitHub\\General-code\\temp_table1.r")
 
 # get rid of duplicates
 ParticipantInfo_risk <- unique(ParticipantInfo_risk)
@@ -232,16 +234,18 @@ colnames(diagnosis.table) <- c("Random_ID","final.group")
 
 
 # merge final group category with all results
-allresults <- merge(allresults,diagnosis.table,by="Random_ID")
+alldata <- merge(alldata,diagnosis.table,by = "Random_ID")
 # make categorical variable for final group
-allresults$final.group[allresults$final.group==0] <- "Negative"
-allresults$final.group[allresults$final.group==1] <- "Single ab positive"
-allresults$final.group[allresults$final.group==2] <- "Multiple ab positive"
-allresults$final.group[allresults$final.group==3] <- "T1D"
-
+alldata$final.group[alldata$final.group==0] <- "Negative"
+alldata$final.group[alldata$final.group==1] <- "Single ab positive"
+alldata$final.group[alldata$final.group==2] <- "Multiple ab positive"
+alldata$final.group[alldata$final.group==3] <- "T1D"
+# create new variable for group with T1D and multiple ab combined
+alldata$group2 <- ifelse(alldata$final.group=="T1D" | alldata$final.group=="Multiple ab positive","T1D/multiple ab pos",alldata$final.group)
+View(alldata[c("final.group","group2")])
 
 # Merge the diagnosis back into the full table.
-alldata <- merge(alldata,diagnosis.table,by = "Random_ID")
+
 #-------------------------------------------------------------------------------
 check <- alldata %>% distinct(Random_ID, .keep_all=TRUE)
 
@@ -273,15 +277,15 @@ hist(as.numeric(a$years))
 # now need to determine which INS ratio/proinsulin ratio to use for cross-sectional analyses
 # T1D: results closest to T1D onset 
 alldata$Date_of_Diagnosis <- as.Date(mdy(alldata$Date_of_Diagnosis))
-alldata$timec[alldata$final.group==3] <- abs(alldata$Draw_Date[alldata$final.group==3] - alldata$Date_of_Diagnosis[alldata$final.group==3])
+alldata$timec[alldata$final.group=="T1D"] <- abs(alldata$Draw_Date[alldata$final.group=="T1D"] - alldata$Date_of_Diagnosis[alldata$final.group=="T1D"])
 
 # create labeled factor for final.group
 #check <- alldata %>% distinct(Random_ID, .keep_all=TRUE)
 #table(check$final.group)
-alldata$final.group <- as.factor(alldata$final.group)
+#alldata$final.group <- as.factor(alldata$final.group)
 #check <- alldata %>% distinct(Random_ID, .keep_all=TRUE)
 #table(check$final.group)
-levels(alldata$final.group) = c("Negative","Single ab positive","Multiple ab positive","T1D")
+#levels(alldata$final.group) = c("Negative","Single ab positive","Multiple ab positive","T1D")
 #check <- alldata %>% distinct(Random_ID, .keep_all=TRUE)
 #table(check$final.group)
 
@@ -364,6 +368,7 @@ summary(lm.pro)
 anova(lm.pro)
 TukeyHSD(lm.pro)
 tab_pro <- final_table(allpro,'Pro_pep',group=as.factor(allpro$final.group),margin=2,single=0,ron=2)
+tab_pro2 <- final_table(allpro,'Pro_pep',group=as.factor(allpro$group2),margin=2,single=0,ron=2)
 
 # do proinsulin ratios correlate with biochemical and ECL antibody levels
 corr_pro <- rcorr(as.matrix(allpro[, c( "Pro_pep","gadz","ia2z","mIAA","ZnT8","ICA",
@@ -427,10 +432,17 @@ kable(t1,caption="Table 1.  Descriptive statistics.  Asterisks indicate that Fis
 ```
 \
 
-Table 2 shows the results of the group comparisons for proinsulin ratios.
+Table 2a shows the results of the group comparisons for proinsulin ratios.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
-kable(tab_pro,caption="Table 2.  Proinsulin ratios.")
+kable(tab_pro,caption="Table 2a.  Proinsulin ratios.")
+```
+\
+
+Table 2b shows the results of the group comparisons for proinsulin ratios, with the T1D and multiple antibody positive groups combined.
+
+```{r, results='asis',tidy=TRUE, echo=FALSE}
+kable(tab_pro2,caption="Table 2b.  Proinsulin ratios.")
 ```
 \
 
