@@ -1,7 +1,7 @@
 ---
-title: "TrialNet INS ratio analyses"
+title: "TrialNet proinsulin ratio analyses"
 author: "Laura Pyle"
-date: "December 2, 2018"
+date: "`r format(Sys.time(), '%d %B %Y')`"
 output: word_document
 ---
 
@@ -333,32 +333,45 @@ t1d_select_pro <- t1d_select_pro[t1d_select_pro$time_from_diagnosis==t1d_select_
 
 # now if the proinsulin value closest to dx is not within 3 months, need to use group at the time of proinsulin
 for(i in 1:nrow(t1d_select_pro)) {
-  t1d_select_pro$newgroup[i] <- ifelse(t1d_select_pro$time_from_diagnosis[i]<=90, "T1D",    
+  t1d_select_pro$final.group[i] <- ifelse(t1d_select_pro$time_from_diagnosis[i]<=90, "T1D",    
                                    ifelse(t1d_select_pro$numpos[i]==0,"Negative",
                                     ifelse(t1d_select_pro$numpos[i]==1,"Single ab positive","Multiple ab positive")))
 }
 
-# for negative, single ab positive, multiple ab positive: use most recent
-# UNLESS SUBJECT IS NOT IN THAT CATEGORY AT THAT TIME
-# pull out records with nonmissing propep
+# for non-T1D group, use the most recent proinsulin value that corresponds to the final ab group
+# if there isn't a proinsulin value that corresponds to final ab group, use the most recent proinsulin value
+# available and reclassify the person into the ab group corresponding to that visit
 nont1d_select_pro <- nont1d[!is.na(nont1d$Pro_pep),]
 check <- nont1d_select_pro %>% distinct(Random_ID, .keep_all=TRUE)
-# keep only records where current group = final group
-nont1d_select_pro <- nont1d_select_pro[nont1d_select_pro$group == nont1d_select_pro$final.group,]
-check2 <- nont1d_select_pro %>% distinct(Random_ID, .keep_all=TRUE)
-# PROBLEM - THERE MAY NOT BE A PROINSULIN RATIO FROM THE SAME VISIT AT WHICH THE PERSON WAS IN THE FINAL GROUP
-
-# select the most recent record for each person
-temp <- aggregate(nont1d_select_pro$Draw_Date,by=list(nont1d_select_pro$Random_ID),max)
-names(temp) <- c("Random_ID","most_recent_draw")
-temp$most_recent_draw <- as.Date(temp$most_recent_draw)
-nont1d_select_pro <- merge(nont1d_select_pro,temp,by = "Random_ID")
-nont1d_select_pro <- nont1d_select_pro[nont1d_select_pro$Draw_Date==nont1d_select_pro$most_recent_draw,]
+nont1d_select_pro$flag[nont1d_select_pro$final.group == nont1d_select_pro$group] <- 1
+# create another df for people who are flagged who have a propep that matches their final group
+nont1D_match <- nont1d_select_pro[nont1d_select_pro$flag==1,]
+# keep the most recent proinsulin for those people
+nont1D_match <- nont1D_match[order(nont1D_match$Random_ID,desc(nont1D_match$Draw_Date)),]
+nont1D_match <- nont1D_match %>% group_by(Random_ID) %>% filter(row_number(Random_ID) == 1)
+# go back to original dataset and take out people who had a match
+# this leaves only people who do not have a proinsulin value drawn while they were in their final.group category
+x <- as.data.frame(nont1D_match$Random_ID)
+x$flagx <- rep(1,length(x))
+names(x) <- c("Random_ID","flagx")
+nont1d_select_pro <- merge(nont1d_select_pro,x,by="Random_ID",all.x = TRUE,all.y=TRUE)
+nont1d_nomatch <- nont1d_select_pro[is.na(nont1d_select_pro$flagx),]
+# keep the most recent proinsulin value
+nont1d_nomatch <- nont1d_nomatch[order(nont1d_nomatch$Random_ID,desc(nont1d_nomatch$Draw_Date)),]
+nont1d_nomatch <- nont1d_nomatch %>% group_by(Random_ID) %>% filter(row_number(Random_ID) == 1)
+# now reclassify final.group to be equal to current group
+nont1d_nomatch$final.group <- nont1d_nomatch$group
+# combine those with match and those without
+nont1d_select_pro <- bind_rows(nont1D_match,nont1d_nomatch)
+# people in match group: 68
+# people in no match group: 17
+# people in final dataset: 85
 
 # combine the results for the pro-pep analysis
 t1d_select_pro$most_recent_draw <- NA
 nont1d_select_pro$time_from_diagnosis <- NA
-allpro <- rbind(nont1d_select_pro,t1d_select_pro)
+allpro <- bind_rows(nont1d_select_pro,t1d_select_pro)
+label(allpro$Pro_pep)="Proinsulin ratio"
 
 # for table 1, need the draw date corresponding to the proins used in cross sectional analyses
 datepro <- allpro[c("Random_ID","Draw_Date")]
@@ -370,7 +383,10 @@ getdates$tab1flag <- rep(1,nrow(getdates))
 getdates$Draw_Date <- getdates$tab1_date
 tab1data <- merge(alldata,getdates,by=c("Random_ID","Draw_Date"))
 tab1data$age <- floor(tab1data$DOB %--% tab1data$Draw_Date / dyears(1))
-
+# need to update final.group variable using what is in allpro
+correct_group <- subset(allpro, select =c(Random_ID,final.group))
+tab1data <- subset(tab1data, select = -c(final.group))
+tab1data <- merge(tab1data,correct_group,by="Random_ID",all=TRUE)
 
 # ++++++++++++++++++++++++++++
 # flattenCorrMatrix
@@ -471,8 +487,8 @@ The following data manipulation and cleaning steps were performed:
 + If they were never multiple antibody positive, but were single antibody positive at 2 or more visits, they were classified as single antibody positive.
 + Otherwise, they were classified as antibody negative.
 12) For cross-sectional analyses, proinsulin ratios were selected as follows:
-+ For the T1D group, the result closest to the date of diagnosis was used.
-+ For all other groups, the most recent result was used.
++ For the T1D group, if there was a proinsulin ratio within 3 months of diagnosis, that value was used.  If there was not a proinsulin ratio within 3 months of diagnosis, then the most recent proinsulin ratio was used, and the subject was recategorized as having the antibody status that was current at the most recent proinsulin ratio.
++ For all other groups, the analysis used the most recent proinsulin ratio from visits where the participant's antibody status matched the status they belonged to using all their data.  If there were no proinsulin ratios available from such visits, the most recent proinsulin ratio was used, and the participant was reclassifed as having the antibody status that was current at that time.
 13) IGTT was defined as having any visit where:
 + Fasting BG>100 and <126 OR
 + 2 hour BG>=140 and <200 OR
@@ -510,21 +526,21 @@ kable(corr_pro,caption="Table 3.  Correlation of proinsulin ratios with antibody
 ```
 \
 
-Table 4 shows the results of the logistic regression testing whether the earliest pro-insulin ratio predicts T1D.
+Table 4 shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts T1D.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(log_t1d,caption="Table 4.  Logistic regression of the earliest pro-insulin ratio vs. T1D.")
 ```
 \
 
-Table 5 shows the results of the logistic regression testing whether the earliest pro-insulin ratio predicts IGTT.
+Table 5 shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts IGTT.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(log_igtt,caption="Table 5.  Logistic regression of the earliest pro-insulin ratio vs. IGTT.")
 ```
 \
 
-Table 6 shows the results of the mixed model testing whether the groups differ in the trajectories of pro-insulin ratios over time.
+Table 6 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time.  The trajectories in the two groups were not significantly different (p=`r mixt[4,4]`).
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(mixt,caption="Table 6.  ANOVA table for mixed effects model.")
