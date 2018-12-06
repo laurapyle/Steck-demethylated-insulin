@@ -91,12 +91,25 @@ alldata$DR3DR4[alldata$DR3=="PRESENT" & alldata$DR4=="PRESENT"] <- "PRESENT"
 alldata$DR3DR4[!(alldata$DR3=="PRESENT" & alldata$DR4=="PRESENT")] <- "ABSENT"
 alldata$DR3DR4[is.na(alldata$DR3) & is.na(alldata$DR4)] <- NA
 
+# correct some values per Andrea
+alldata$Height.cm[alldata$Draw_Date==as.Date("2008-12-30") & alldata$Random_ID=="146273"] <- 172.5
+alldata$Weight.kg[alldata$Draw_Date==as.Date("2008-12-30") & alldata$Random_ID=="146273"] <- 57
+alldata$Height.cm[alldata$Draw_Date==as.Date("2008-11-26") & alldata$Random_ID=="146513"] <- 164.6
+alldata$Weight.kg[alldata$Draw_Date==as.Date("2008-11-26") & alldata$Random_ID=="146513"] <- 52.9
+alldata$Height.cm[alldata$Draw_Date==as.Date("2013-10-14") & alldata$Random_ID=="148088"] <- 161.3
+alldata$Weight.kg[alldata$Draw_Date==as.Date("2013-10-14") & alldata$Random_ID=="148088"] <- 67
+alldata$Height.cm[alldata$Draw_Date==as.Date("2010-08-07") & alldata$Random_ID=="149118"] <- 156.9
+alldata$Weight.kg[alldata$Draw_Date==as.Date("2010-08-07") & alldata$Random_ID=="149118"] <- 61.8
+alldata$Height.cm[alldata$Draw_Date==as.Date("2009-04-20") & alldata$Random_ID=="150283"] <- 184.6
+alldata$Weight.kg[alldata$Draw_Date==as.Date("2009-04-20") & alldata$Random_ID=="150283"] <- 125.4
+alldata$Height.cm[alldata$Draw_Date==as.Date("2015-04-06") & alldata$Random_ID=="237376"] <- 174.9
+alldata$Weight.kg[alldata$Draw_Date==as.Date("2015-04-06") & alldata$Random_ID=="237376"] <- 75.39
+  
 # calculate BMI
 alldata$BMI <- alldata$Weight.kg / ((alldata$Height.cm/100)^2)
-bad <- alldata[alldata$BMI>50,]
-bad <- bad[!is.na(bad$Random_ID),]
-bad <- subset(bad,select=c("Random_ID","Draw_Date","Height.cm","Weight.kg","BMI"))
-
+#bad <- alldata[alldata$BMI>50,]
+#bad <- bad[!is.na(bad$Random_ID),]
+#bad <- subset(bad,select=c("Random_ID","Draw_Date","Height.cm","Weight.kg","BMI"))
 
 # combine race/ethnicity
 alldata$race_eth <- NA
