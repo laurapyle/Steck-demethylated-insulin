@@ -8,7 +8,7 @@ output: word_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
-#library(sqldf)
+
 library(dplyr)
 library(lubridate)
 library(graphics)
@@ -17,6 +17,8 @@ library(Hmisc)
 #library(Table1)
 library(knitr)
 library(nlme)
+library(ppcor)
+#library(sjlabelled)
 
 # read in the data
 longitudinal_visit_info <- read.csv("\\\\ucdenver.pvt\\som-home\\pylell\\BDC\\Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\longitudinal 091818.csv")
@@ -310,6 +312,7 @@ igttever <- aggregate(igttcheck$igtt,by=list(igttcheck$Random_ID),max)
 names(igttever) <- c("Random_ID","igttever")
 alldata <- merge(alldata,igttever,by="Random_ID")
 alldata$igttever[is.na(alldata$igttever)] <- 0
+alldata$age <- floor(alldata$DOB %--% alldata$Draw_Date / dyears(1))
 
 # labels
 label(alldata$Pro_pep)='Proinsulin ratio'
@@ -318,11 +321,13 @@ label(alldata$DPT1Risk)="DPT1 Risk Score"
 label(alldata$DR3)="DR3"
 label(alldata$DR4)="DR4"
 label(alldata$DR3DR4)="DR3DR4"
+label(alldata$BMI)="BMI"
 
 # create dataset with earliest proinsulin ratio
 earliest_pro <- alldata[!is.na(alldata$Pro_pep),]
 earliest_pro <- earliest_pro[order(earliest_pro$Random_ID,earliest_pro$Draw_Date),]
 earliest_pro <- earliest_pro %>% group_by(Random_ID) %>% filter(row_number() == 1)
+earliest_pro$age <- floor(earliest_pro$DOB %--% earliest_pro$Draw_Date / dyears(1))
 
 # create labeled factor for final.group
 #check <- alldata %>% distinct(Random_ID, .keep_all=TRUE)
@@ -391,7 +396,12 @@ nont1d_select_pro <- bind_rows(nont1D_match,nont1d_nomatch)
 t1d_select_pro$most_recent_draw <- NA
 nont1d_select_pro$time_from_diagnosis <- NA
 allpro <- bind_rows(nont1d_select_pro,t1d_select_pro)
+allpro$age <- floor(allpro$DOB %--% allpro$Draw_Date / dyears(1))
 label(allpro$Pro_pep)="Proinsulin ratio"
+
+# correct group2 variable in allpro
+allpro$group2 <- ifelse(allpro$final.group=="T1D" | allpro$final.group=="Multiple ab positive","T1D/multiple ab pos",allpro$final.group)
+
 
 # for table 1, need the draw date corresponding to the proins used in cross sectional analyses
 datepro <- allpro[c("Random_ID","Draw_Date")]
@@ -403,6 +413,9 @@ getdates$tab1flag <- rep(1,nrow(getdates))
 getdates$Draw_Date <- getdates$tab1_date
 tab1data <- merge(alldata,getdates,by=c("Random_ID","Draw_Date"))
 tab1data$age <- floor(tab1data$DOB %--% tab1data$Draw_Date / dyears(1))
+label(tab1data$Pro_pep)="Proinsulin ratio"
+
+
 # need to update final.group variable using what is in allpro
 correct_group <- subset(allpro, select =c(Random_ID,final.group))
 tab1data <- subset(tab1data, select = -c(final.group))
@@ -423,7 +436,17 @@ flattenCorrMatrix <- function(cormat, pmat) {
     )
 }
 
+
+
 # compare proinsulin ratios between T1D, Ab-, single Ab+, multiple Ab+
+
+# unadjusted comparisons
+tab_pro <- final_table(allpro,'Pro_pep',group=as.factor(allpro$final.group),margin=2,single=0,ron=2)
+tab_pro2 <- final_table(allpro,'Pro_pep',group=as.factor(allpro$group2),margin=2,single=0,ron=2)
+tab_pro3 <- final_table(allpro[allpro$final.group != "T1D",],'Pro_pep',
+                        group=as.factor(allpro[allpro$final.group != "T1D",]$final.group),margin=2,single=0,ron=2)
+
+# adjust for age, sex, and BMI
 allpro$l_Pro_pep=log(allpro$Pro_pep)
 # lm.pro = with(allpro, lm(Pro_pep ~ as.factor(final.group))) 
 # summary(lm.pro)
@@ -434,15 +457,15 @@ allpro$l_Pro_pep=log(allpro$Pro_pep)
 # anova(lm.pro)
 # TukeyHSD(lm.pro)
 # log transformed
-lm.pro = with(allpro, lm(l_Pro_pep ~ as.factor(final.group))) 
+lm.pro = with(allpro, lm(Pro_pep ~ as.factor(final.group) + age + Gender + BMI)) 
 summary(lm.pro)
 anova(lm.pro)
 lm.pro <- aov(lm.pro)
 summary(lm.pro)
 anova(lm.pro)
-TukeyHSD(lm.pro)
-tab_pro <- final_table(allpro,'Pro_pep',group=as.factor(allpro$final.group),margin=2,single=0,ron=2)
-tab_pro2 <- final_table(allpro,'Pro_pep',group=as.factor(allpro$group2),margin=2,single=0,ron=2)
+pval_final.group <- anova(lm.pro)[1,5]
+diffs_final.group <- TukeyHSD(lm.pro, which = "as.factor(final.group)")
+
 
 # do proinsulin ratios correlate with biochemical and ECL antibody levels
 corr_pro <- rcorr(as.matrix(allpro[, c( "Pro_pep","gadz","ia2z","mIAA","ZnT8","ICA",
@@ -450,6 +473,11 @@ corr_pro <- rcorr(as.matrix(allpro[, c( "Pro_pep","gadz","ia2z","mIAA","ZnT8","I
                   ,type = "spearman")
 corr_pro <- flattenCorrMatrix(corr_pro$r, corr_pro$P)
 corr_pro <- corr_pro[corr_pro$row=="Pro_pep",]
+
+# partial correlations adjusted for age, sex, gender
+#blah <- na.omit(remove_all_labels(allpro))
+#corr_pro_part <- pcor.test(x=blah$Pro_pep,y=blah[,c("gadz","ia2z","mIAA","ZnT8","ICA","ECL_GADA","ECL_IA2A","ECL_IAA")],
+#                           z=blah[,c("age","BMI")])
 
 # table 1 - include age at last visit, gender, race/eth, DPT1 score, HLA, A1c
 label(tab1data$age)="Age (yrs)"
@@ -459,7 +487,7 @@ label(tab1data$race_eth)="Race/ethnicity"
 tab1data$DR3DR4 <- as.factor(tab1data$DR3DR4)
 label(tab1data$DR3DR4)="DR3 DR4"
 
-t1 <- final_table(tab1data,c("age","Gender","race_eth","DPT1Risk","DR3","DR4","DR3DR4","HLA","HbA1c"),group=as.factor(tab1data$final.group),margin=2,single=0,ron=1)
+t1 <- final_table(tab1data,c("age","Gender","race_eth","DPT1Risk","DR3","DR4","DR3DR4","HLA","HbA1c","BMI"),group=as.factor(tab1data$final.group),margin=2,single=0,ron=1)
 
 # does earliest proins value predict T1D or IGTT?
 log1 <- glm(T1D~Pro_pep , earliest_pro, family='binomial')
@@ -469,11 +497,24 @@ log2 <- glm(igttever~Pro_pep , earliest_pro, family='binomial')
 log_igtt <- mod_tablog(log2)
 log_igtt$Predictor<-c("Proinsulin ratio")
 
+log1_adj <- glm(T1D~Pro_pep + age + as.factor(Gender) + BMI , earliest_pro, family='binomial')
+log_t1d_adj <- mod_tablog(log1_adj)
+log_t1d_adj$Predictor<-c("Proinsulin ratio","Age","Male sex","BMI")
+log2_adj <- glm(igttever~Pro_pep + age + Gender + BMI, earliest_pro, family='binomial')
+log_igtt_adj <- mod_tablog(log2_adj)
+log_igtt_adj$Predictor<-c("Proinsulin ratio","Age","Male sex","BMI")
+
 # longitudinal analysis
 long <- alldata[!is.na(alldata$time),]
 mix <- lme(Pro_pep~ time + as.factor(final.group) + time:as.factor(final.group), random = ~1 + time | Random_ID, data=long, na.action = na.omit)
 # type III tests
 mixt <- anova.lme(mix,type="marginal")
+
+# longitudinal analysis
+mix_adj <- lme(Pro_pep~ time + as.factor(final.group) + time:as.factor(final.group) + age + Gender + BMI, 
+               random = ~1 + time | Random_ID, data=long, na.action = na.omit)
+# type III tests
+mixt_adj <- anova.lme(mix_adj,type="marginal")
 
 ```
 
@@ -540,30 +581,66 @@ kable(tab_pro2,caption="Table 2b.  Proinsulin ratios.")
 ```
 \
 
-Table 3 shows the correlations of and proinsulin ratios with continuous antibody levels at the timepoint selected for cross-sectional analysis.
+Table 2c shows the results of the group comparisons for proinsulin ratios, with the T1D group excluded.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
-kable(corr_pro,caption="Table 3.  Correlation of proinsulin ratios with antibody levels.")
+kable(tab_pro3,caption="Table 2c.  Proinsulin ratios.")
 ```
 \
 
-Table 4 shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts T1D.
+After adjusting for age, sex, and BMI, the groups were not significantly different (p=`r pval_final.group`).  Table 3 shows the differences between all pairwise comparisons of groups, using Tukey's HSD test.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
-kable(log_t1d,caption="Table 4.  Logistic regression of the earliest pro-insulin ratio vs. T1D.")
+kable(diffs_final.group$`as.factor(final.group)`,caption="Table 3.  Pairwise comparisons of least-squares mean proinsulin ratio, adjusted for age, sex, and BMI.")
 ```
 \
 
-Table 5 shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts IGTT.
+Table 4 shows the correlations of proinsulin ratios with continuous antibody levels at the timepoint selected for cross-sectional analysis.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
-kable(log_igtt,caption="Table 5.  Logistic regression of the earliest pro-insulin ratio vs. IGTT.")
+kable(corr_pro,caption="Table 4.  Correlation of proinsulin ratios with antibody levels.")
 ```
 \
 
-Table 6 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time.  The trajectories in the two groups were not significantly different (p=`r mixt[4,4]`).
+Table 5a shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts T1D.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
-kable(mixt,caption="Table 6.  ANOVA table for mixed effects model.")
+kable(log_t1d,caption="Table 5a.  Logistic regression of the earliest pro-insulin ratio vs. T1D.")
 ```
 \
+
+Table 5b shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts T1D, after adjusting for sex, age, and BMI.
+
+```{r, results='asis',tidy=TRUE, echo=FALSE}
+kable(log_t1d_adj,caption="Table 5b.  Logistic regression of the earliest pro-insulin ratio vs. T1D, adjusting for sex, age, and BMI.")
+```
+\
+
+Table 6a shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts IGTT.
+
+```{r, results='asis',tidy=TRUE, echo=FALSE}
+kable(log_igtt,caption="Table 6a.  Logistic regression of the earliest pro-insulin ratio vs. IGTT.")
+```
+\
+
+Table 6b shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts IGTT, after adjusting for sex, age, and BMI.
+
+```{r, results='asis',tidy=TRUE, echo=FALSE}
+kable(log_igtt_adj,caption="Table 6b.  Logistic regression of the earliest pro-insulin ratio vs. IGTT, adjusting for sex, age, and BMI.")
+```
+\
+
+Table 7 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time.  The trajectories in the two groups were not significantly different (p=`r mixt[4,4]`).
+
+```{r, results='asis',tidy=TRUE, echo=FALSE}
+kable(mixt,caption="Table 7.  ANOVA table for mixed effects model.")
+```
+\
+
+Table 8 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time, after adjusting for sex, age, and BMI.  The trajectories in the two groups were not significantly different (p=`r mixt_adj[3,4]`).
+
+```{r, results='asis',tidy=TRUE, echo=FALSE}
+kable(mixt_adj,caption="Table 8.  ANOVA table for mixed effects model, adjusted for sex, age, and BMI.")
+```
+\
+
