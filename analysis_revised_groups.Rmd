@@ -655,14 +655,14 @@ kable(log_igtt_adj,caption="Table 6b.  Logistic regression of the earliest pro-i
 ```
 \
 
-Table 7 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time.  The trajectories in the two groups were not significantly different (p=`r mixt[4,4]`).
+Table 7 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time.  The trajectories in the four groups were not significantly different (p=`r mixt[4,4]`).
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(mixt,caption="Table 7.  ANOVA table for mixed effects model.")
 ```
 \
 
-Table 8 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time, after adjusting for sex, age, and BMI.  The trajectories in the two groups were not significantly different (p=`r mixt_adj[3,4]`).
+Table 8 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time, after adjusting for sex, age, and BMI.  The trajectories in the four groups were not significantly different (p=`r mixt_adj[3,4]`).
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(mixt_adj,caption="Table 8.  ANOVA table for mixed effects model, adjusted for sex, age, and BMI.")
