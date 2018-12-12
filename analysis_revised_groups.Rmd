@@ -17,7 +17,7 @@ library(Hmisc)
 #library(Table1)
 library(knitr)
 library(nlme)
-library(ppcor)
+#library(ppcor)
 #library(sjlabelled)
 
 # read in the data
@@ -314,6 +314,24 @@ alldata <- merge(alldata,igttever,by="Random_ID")
 alldata$igttever[is.na(alldata$igttever)] <- 0
 alldata$age <- floor(alldata$DOB %--% alldata$Draw_Date / dyears(1))
 
+# calculate follow up time
+firstvisit <- alldata[order(alldata$Random_ID,alldata$Draw_Date),]
+firstvisit <- firstvisit[,c("Random_ID","Draw_Date","Date_of_Diagnosis")]
+firstvisit <- firstvisit %>% group_by(Random_ID) %>% filter(row_number(Random_ID) == 1)
+names(firstvisit) <- c("Random_ID","firstdate","Date_of_Diagnosis")
+lastvisit <- alldata[order(alldata$Random_ID,desc(alldata$Draw_Date)),]
+lastvisit <- lastvisit[,c("Random_ID","Draw_Date")]
+names(lastvisit) <- c("Random_ID","lastdate")
+lastvisit <- lastvisit %>% group_by(Random_ID) %>% filter(row_number(Random_ID) == 1)
+firstlast <- merge(firstvisit,lastvisit,by="Random_ID",all=TRUE)
+firstlast$lastdate <- ifelse(!is.na(firstlast$Date_of_Diagnosis) & firstlast$Date_of_Diagnosis>firstlast$lastdate,
+                             firstlast$Date_of_Diagnosis,firstlast$lastdate)
+firstlast$lastdate <- as.Date(firstlast$lastdate,origin = "1970-01-01")
+firstlast$followup <-  as.numeric(firstlast$lastdate - firstlast$firstdate) / 365.25
+alldata <- merge(alldata,firstlast,by="Random_ID",all=TRUE)
+
+futab <- tapply(alldata$followup,alldata$final.group,summary)
+
 # labels
 label(alldata$Pro_pep)='Proinsulin ratio'
 label(alldata$Gender)='Gender'
@@ -322,6 +340,7 @@ label(alldata$DR3)="DR3"
 label(alldata$DR4)="DR4"
 label(alldata$DR3DR4)="DR3DR4"
 label(alldata$BMI)="BMI"
+label(alldata$followup)="Follow-up time (yrs)"
 
 # create dataset with earliest proinsulin ratio
 earliest_pro <- alldata[!is.na(alldata$Pro_pep),]
@@ -487,7 +506,7 @@ label(tab1data$race_eth)="Race/ethnicity"
 tab1data$DR3DR4 <- as.factor(tab1data$DR3DR4)
 label(tab1data$DR3DR4)="DR3 DR4"
 
-t1 <- final_table(tab1data,c("age","Gender","race_eth","DPT1Risk","DR3","DR4","DR3DR4","HLA","HbA1c","BMI"),group=as.factor(tab1data$final.group),margin=2,single=0,ron=1)
+t1 <- final_table(tab1data,c("age","Gender","race_eth","DPT1Risk","DR3","DR4","DR3DR4","HLA","HbA1c","BMI","followup"),group=as.factor(tab1data$final.group),margin=2,single=0,ron=1)
 
 # does earliest proins value predict T1D or IGTT?
 log1 <- glm(T1D~Pro_pep , earliest_pro, family='binomial')
@@ -555,15 +574,21 @@ The following data manipulation and cleaning steps were performed:
 + Fasting BG>100 and <126 OR
 + 2 hour BG>=140 and <200 OR
 + Any of 30, 60, 90 minute BG >200
+14) Follow-up time was calculated as the years elapsed between the first draw date and the last draw date or the date of diagnosis, whichever was later.
 
 The distribution of all variables was asssessed prior to analysis.  Group comparisons were done using ANOVA or the Kruskal-Wallis test for continuous variables and the chi-square or Fisher's exact test for categorical variables.  Logistic regresion was used to test whether the earliest pro-insulin ratio predicted development of T1D or IGTT.  A random coefficients mixed model was used to test whether the groups had different trajectories of proinsulin over time.
 
 ## Results
 
-Table 1 presents descriptive statistics for demographic and clinical variables by group.
+Table 1a presents descriptive statistics for demographic and clinical variables by group.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
-kable(t1,caption="Table 1.  Descriptive statistics.  Asterisks indicate that Fisher's exact test was used instead of the chi-square test due to small expected cell value.")
+kable(t1,caption="Table 1a.  Descriptive statistics.  Asterisks indicate that Fisher's exact test was used instead of the chi-square test due to small expected cell value.")
+```
+\
+
+```{r, results='asis',tidy=TRUE, echo=FALSE}
+kable(futab,caption="Table 1b.  Descriptive statistics for follow up time by group.")
 ```
 \
 
