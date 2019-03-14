@@ -272,10 +272,11 @@ alldata <- merge(alldata,diagnosis.table,by = "Random_ID")
 alldata$group2 <- ifelse(alldata$final.group=="T1D" | alldata$final.group=="Multiple ab positive","T1D/multiple ab pos",alldata$final.group)
 
 # of those who were previously classified as single antibody positive, describe # of single ab positive visits
-singlecheck <- alldata[alldata$final.group=="Single ab positive",]
+singlecheck <- alldata[alldata$final.group=="Single ab positive",
+                       c("Random_ID","Draw_Date","final.group","newgroup","ica512_ia2_cat","GAD65_combo_cat","znt8_cat","miaa_cat")]
 # Count visits by ab status for each person classified as single ab positive
 singlecounts <- plyr::count(singlecheck,c("Random_ID","newgroup"))
-View(singlecheck[c("Random_ID","Draw_Date","final.group","newgroup","ica512_ia2_cat","GAD65_combo_cat","znt8_cat","miaa_cat")])
+View(singlecheck[])
 # reshape the count dataframe
 singlecount_wide <- reshape(singlecounts,timevar="newgroup",idvar="Random_ID",direction="wide")
 singlecount_wide$newcat[singlecount_wide$`freq.Single GAD positive`>=2 & is.na(singlecount_wide$`freq.Other single ab positive`)
@@ -283,7 +284,10 @@ singlecount_wide$newcat[singlecount_wide$`freq.Single GAD positive`>=2 & is.na(s
 singlecount_wide$newcat[is.na(singlecount_wide$`freq.Single GAD positive`) & is.na(singlecount_wide$`freq.Single IAA positive`)] <- "Other single ab positive"
 singlecount_wide$newcat[singlecount_wide$`freq.Single IAA positive`>=2 & is.na(singlecount_wide$`freq.Other single ab positive`)
                         &is.na(singlecount_wide$`freq.Single GAD positive`)] <- "Single IAA positive"
-write.csv(singlecount_wide,"S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\checking_single_ab.csv")
+
+forandrea <- merge(singlecheck,singlecount_wide,by="Random_ID")
+
+write.csv(forandrea,"S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\checking_single_ab.csv")
 
 #-------------------------------------------------------------------------------
 check <- alldata %>% distinct(Random_ID, .keep_all=TRUE)
