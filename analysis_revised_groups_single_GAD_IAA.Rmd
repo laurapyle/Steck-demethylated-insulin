@@ -227,13 +227,16 @@ missingt1d <- alldata[is.na(alldata$T1D),]
 for(i in 1:nrow(alldata)) {
   alldata$group[i] <- ifelse(alldata$T1D[i]=="Yes","T1D",
                              ifelse(alldata$numpos[i]==0,"Negative",
+                                    ifelse(alldata$numpos[i]==1,"Single ab positive","Multiple ab positive")))
+}
+for(i in 1:nrow(alldata)) {
+  alldata$newgroup[i] <- ifelse(alldata$T1D[i]=="Yes","T1D",
+                             ifelse(alldata$numpos[i]==0,"Negative",
                                     ifelse(alldata$numpos[i]==1 & alldata$ica512_ia2_cat[i]==1,"Single IAA positive",
                                            ifelse(alldata$numpos[i]==1 & alldata$GAD65_combo_cat[i]==1,"Single GAD positive",
                                                   ifelse(alldata$numpos[i]==1,"Other single ab positive","Multiple ab positive")))))
 }
-#View(alldata[c("Random_ID","numpos","group","ica512_ia2_cat","GAD65_combo_cat","znt8_cat","miaa_cat")])
 
-# need to modify below for single IAA and GAD
 #-------------------------------------------------------------------------------
 # Tim's group status code.
 # Separate table for diagnosis.
@@ -243,12 +246,8 @@ allresults <- diagnosis.table
 # Count diagnoses per subject
 counts <- plyr::count(diagnosis.table,c("Random_ID","group"))
 # Find participants with only one single ab+
-single_iaa <- counts[counts$group == "Single IAA positive",]
-single_iaa <- single_iaa[single_iaa$freq < 2,"Random_ID"]
-single_gad <- counts[counts$group == "Single GAD positive",]
-single_gad <- single_gad[single_gad$freq < 2,"Random_ID"]
-single_other <- counts[counts$group == "Other single ab positive",]
-single_other <- single_other[single_other$freq < 2,"Random_ID"]
+single <- counts[counts$group == "Single ab positive",]
+single <- single[single$freq < 2,"Random_ID"]
 # Convert group to numeric
 diagnosis.table$group <- 
   plyr::revalue(diagnosis.table$group,c("Negative" = 0,"Single ab positive" = 1,
@@ -261,7 +260,6 @@ recat <- single[
   which(single %in% diagnosis.table[diagnosis.table$group == 1,"Random_ID"])]
 diagnosis.table[diagnosis.table$Random_ID %in% recat,"group"] <- 0
 colnames(diagnosis.table) <- c("Random_ID","final.group")
-
 # make categorical variable for final group
 diagnosis.table$final.group[diagnosis.table$final.group==0] <- "Negative"
 diagnosis.table$final.group[diagnosis.table$final.group==1] <- "Single ab positive"
@@ -273,7 +271,19 @@ alldata <- merge(alldata,diagnosis.table,by = "Random_ID")
 # create new variable for group with T1D and multiple ab combined
 alldata$group2 <- ifelse(alldata$final.group=="T1D" | alldata$final.group=="Multiple ab positive","T1D/multiple ab pos",alldata$final.group)
 
-# Merge the diagnosis back into the full table.
+# of those who were previously classified as single antibody positive, describe # of single ab positive visits
+singlecheck <- alldata[alldata$final.group=="Single ab positive",]
+# Count visits by ab status for each person classified as single ab positive
+singlecounts <- plyr::count(singlecheck,c("Random_ID","newgroup"))
+View(singlecheck[c("Random_ID","Draw_Date","final.group","newgroup","ica512_ia2_cat","GAD65_combo_cat","znt8_cat","miaa_cat")])
+# reshape the count dataframe
+singlecount_wide <- reshape(singlecounts,timevar="newgroup",idvar="Random_ID",direction="wide")
+singlecount_wide$newcat[singlecount_wide$`freq.Single GAD positive`>=2 & is.na(singlecount_wide$`freq.Other single ab positive`)
+                        &is.na(singlecount_wide$`freq.Single IAA positive`)] <- "Single GAD positive"
+singlecount_wide$newcat[is.na(singlecount_wide$`freq.Single GAD positive`) & is.na(singlecount_wide$`freq.Single IAA positive`)] <- "Other single ab positive"
+singlecount_wide$newcat[singlecount_wide$`freq.Single IAA positive`>=2 & is.na(singlecount_wide$`freq.Other single ab positive`)
+                        &is.na(singlecount_wide$`freq.Single GAD positive`)] <- "Single IAA positive"
+write.csv(singlecount_wide,"S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\checking_single_ab.csv")
 
 #-------------------------------------------------------------------------------
 check <- alldata %>% distinct(Random_ID, .keep_all=TRUE)
