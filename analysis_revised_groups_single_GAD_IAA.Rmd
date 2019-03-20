@@ -232,7 +232,7 @@ for(i in 1:nrow(alldata)) {
 for(i in 1:nrow(alldata)) {
   alldata$newgroup[i] <- ifelse(alldata$T1D[i]=="Yes","T1D",
                              ifelse(alldata$numpos[i]==0,"Negative",
-                                    ifelse(alldata$numpos[i]==1 & alldata$ica512_ia2_cat[i]==1,"Single IAA positive",
+                                    ifelse(alldata$numpos[i]==1 & alldata$miaa_cat[i]==1,"Single mIAA positive",
                                            ifelse(alldata$numpos[i]==1 & alldata$GAD65_combo_cat[i]==1,"Single GAD positive",
                                                   ifelse(alldata$numpos[i]==1,"Other single ab positive","Multiple ab positive")))))
 }
@@ -280,10 +280,10 @@ View(singlecheck[])
 # reshape the count dataframe
 singlecount_wide <- reshape(singlecounts,timevar="newgroup",idvar="Random_ID",direction="wide")
 singlecount_wide$newcat[singlecount_wide$`freq.Single GAD positive`>=2 & is.na(singlecount_wide$`freq.Other single ab positive`)
-                        &is.na(singlecount_wide$`freq.Single IAA positive`)] <- "Single GAD positive"
-singlecount_wide$newcat[is.na(singlecount_wide$`freq.Single GAD positive`) & is.na(singlecount_wide$`freq.Single IAA positive`)] <- "Other single ab positive"
-singlecount_wide$newcat[singlecount_wide$`freq.Single IAA positive`>=2 & is.na(singlecount_wide$`freq.Other single ab positive`)
-                        &is.na(singlecount_wide$`freq.Single GAD positive`)] <- "Single IAA positive"
+                        &is.na(singlecount_wide$`freq.Single mIAA positive`)] <- "Single GAD positive"
+singlecount_wide$newcat[is.na(singlecount_wide$`freq.Single GAD positive`) & is.na(singlecount_wide$`freq.Single mIAA positive`)] <- "Other single ab positive"
+singlecount_wide$newcat[singlecount_wide$`freq.Single mIAA positive`>=2 & is.na(singlecount_wide$`freq.Other single ab positive`)
+                        &is.na(singlecount_wide$`freq.Single GAD positive`)] <- "Single mIAA positive"
 
 forandrea <- merge(singlecheck,singlecount_wide,by="Random_ID")
 
