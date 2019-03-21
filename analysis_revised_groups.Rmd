@@ -21,8 +21,8 @@ library(nlme)
 #library(sjlabelled)
 
 # read in the data
-longitudinal_visit_info <- read.csv("\\\\ucdenver.pvt\\som-home\\pylell\\BDC\\Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\longitudinal 091818.csv")
-ParticipantInfo_risk <- read.csv("\\\\ucdenver.pvt\\som-home\\pylell\\BDC\\Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\Participant Info risk 091818.csv",na.strings = c("NA"," ","","      "))
+longitudinal_visit_info <- read.csv("S:/Shared Projects/Laura/BDC/Projects/Andrea Steck/Trialnet progressors analysis/Fourth analysis - demethylated insulin with updated dataset/Data/longitudinal 091818.csv")
+ParticipantInfo_risk <- read.csv("S:/Shared Projects/Laura/BDC/Projects/Andrea Steck/Trialnet progressors analysis/Fourth analysis - demethylated insulin with updated dataset/Data/Participant Info risk 091818.csv",na.strings = c("NA"," ","","      "))
 
 source("C:\\Users\\pylell\\Documents\\GitHub\\General-code\\temp_table1.r")
 source("C:\\Users\\pylell\\Documents\\GitHub\\General-code\\01_functions.r")
