@@ -493,6 +493,9 @@ corr_pro <- rcorr(as.matrix(allpro[, c( "Pro_pep","gadz","ia2z","mIAA","ZnT8","I
 corr_pro <- flattenCorrMatrix(corr_pro$r, corr_pro$P)
 corr_pro <- corr_pro[corr_pro$row=="Pro_pep",]
 
+# write cross-sectional dataset for Taylor
+write.csv(allpro,file="S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\allpro.csv")
+
 # partial correlations adjusted for age, sex, gender
 #blah <- na.omit(remove_all_labels(allpro))
 #corr_pro_part <- pcor.test(x=blah$Pro_pep,y=blah[,c("gadz","ia2z","mIAA","ZnT8","ICA","ECL_GADA","ECL_IA2A","ECL_IAA")],
