@@ -17,12 +17,14 @@ library(Hmisc)
 #library(Table1)
 library(knitr)
 library(nlme)
+library(ggplot2)
+library(tidyr)
 #library(ppcor)
 #library(sjlabelled)
 
 # read in the data
-longitudinal_visit_info <- read.csv("S:/Shared Projects/Laura/BDC/Projects/Andrea Steck/Trialnet progressors analysis/Fourth analysis - demethylated insulin with updated dataset/Data/longitudinal 091818.csv")
-ParticipantInfo_risk <- read.csv("S:/Shared Projects/Laura/BDC/Projects/Andrea Steck/Trialnet progressors analysis/Fourth analysis - demethylated insulin with updated dataset/Data/Participant Info risk 091818.csv",na.strings = c("NA"," ","","      "))
+longitudinal_visit_info <- read.csv("S:/Shared Projects/Laura/BDC/Projects/Andrea Steck/Trialnet progressors analysis/Fourth analysis - demethylated insulin with updated dataset/Data/longitudinal 051019.csv")
+ParticipantInfo_risk <- read.csv("S:/Shared Projects/Laura/BDC/Projects/Andrea Steck/Trialnet progressors analysis/Fourth analysis - demethylated insulin with updated dataset/Data/Participant Info risk 051019.csv",na.strings = c("NA"," ","","      "))
 
 source("C:\\Users\\pylell\\Documents\\GitHub\\General-code\\temp_table1.r")
 source("C:\\Users\\pylell\\Documents\\GitHub\\General-code\\01_functions.r")
@@ -342,6 +344,9 @@ label(alldata$DR3DR4)="DR3DR4"
 label(alldata$BMI)="BMI"
 label(alldata$followup)="Follow-up time (yrs)"
 
+# create variable with floor of year
+long$year_floor=as.numeric(floor(long$years))
+
 # create dataset with earliest proinsulin ratio
 earliest_pro <- alldata[!is.na(alldata$Pro_pep),]
 earliest_pro <- earliest_pro[order(earliest_pro$Random_ID,earliest_pro$Draw_Date),]
@@ -531,8 +536,33 @@ long <- alldata[!is.na(alldata$time),]
 mix <- lme(Pro_pep~ time + as.factor(final.group) + time:as.factor(final.group), random = ~1 + time | Random_ID, data=long, na.action = na.omit)
 # type III tests
 mixt <- anova.lme(mix,type="marginal")
+# plots of predicted values by year
+mix_year <- lme(Pro_pep~ year_floor + as.factor(final.group) + year_floor:as.factor(final.group), random = ~1 + year_floor | Random_ID, data=long, na.action = na.omit)
+mix_yeart <- anova.lme(mix_year,type="marginal")
 
-# longitudinal analysis
+preddata <- expand.grid(final.group=unique(long$final.group))
+for(i in 1:nrow(preddata)) {
+    temp <- subset(long,final.group==paste0(preddata$final.group[i]))
+    preddata$min[i] <- min(temp$year_floor)
+    preddata$max[i] <- max(temp$year_floor)
+}
+# need to reshape preddata so there are two observations for each group
+# variable year_floor in first row takes value of min and in second row takes value of max
+# then the plot below should work, using start and stop times for each group
+# still need to fix formatting
+# and then do the same for the adjusted model
+
+test <- predict(mix_year, level=0, newdata=preddata)
+png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time.png")
+p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=final.group)) +
+  xlab("Years") + ylab ("PI:C ratio") +
+  geom_line(data=preddata, aes(y=predict(mix_year, level=0, newdata=preddata)),size=2) +
+  labs(colour="Group") +
+  theme_bw(base_size=22) 
+print(p)
+dev.off()
+
+# adjusted longitudinal analysis
 mix_adj <- lme(Pro_pep~ time + as.factor(final.group) + time:as.factor(final.group) + age + Gender + BMI, 
                random = ~1 + time | Random_ID, data=long, na.action = na.omit)
 # type III tests
