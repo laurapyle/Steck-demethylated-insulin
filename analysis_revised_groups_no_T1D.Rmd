@@ -188,7 +188,7 @@ alldata <- alldata[!is.na(alldata$mIAA) | !is.na(alldata$miaa_cat) | !is.na(alld
 
 # check if anyone is missing GAD, ICA/IA2, or mIAA
 missing <- alldata[is.na(alldata$GAD65_combo_cat) | is.na(alldata$miaa_cat) | is.na(alldata$ica512_ia2_cat),]
-write.csv(missing,file="missing.csv") 
+#write.csv(missing,file="missing.csv") 
 
 # get rid of visits with missing mIAA data
 missmiaa <- alldata[is.na(alldata$GAD65_combo_cat) | is.na(alldata$miaa_cat) | is.na(alldata$ica512_ia2_cat),]
@@ -446,6 +446,12 @@ correct_group <- subset(allpro, select =c(Random_ID,final.group))
 tab1data <- subset(tab1data, select = -c(final.group))
 tab1data <- merge(tab1data,correct_group,by="Random_ID",all=TRUE)
 
+# for this version of the report, remove T1D group
+alldata <- alldata[alldata$final.group != "T1D",]
+tab1data <- tab1data[tab1data$final.group != "T1D",]
+allpro <- allpro[allpro$final.group != "T1D",]
+
+
 # ++++++++++++++++++++++++++++
 # flattenCorrMatrix
 # ++++++++++++++++++++++++++++
@@ -500,7 +506,7 @@ corr_pro <- flattenCorrMatrix(corr_pro$r, corr_pro$P)
 corr_pro <- corr_pro[corr_pro$row=="Pro_pep",]
 
 # write cross-sectional dataset for Taylor
-write.csv(allpro,file="S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\allpro.csv")
+#write.csv(allpro,file="S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\allpro.csv")
 
 # partial correlations adjusted for age, sex, gender
 #blah <- na.omit(remove_all_labels(allpro))
@@ -538,7 +544,7 @@ long <- alldata[!is.na(alldata$time),]
 long$year_floor=as.numeric(floor(long$years))
 
 # write long dataset to file for Taylor
-write.csv(long,file="S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\longitudinal data.csv")
+#write.csv(long,file="S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\longitudinal data.csv")
 
 
 mix <- lme(Pro_pep~ time + as.factor(final.group) + time:as.factor(final.group), random = ~1 + time | Random_ID, data=long, na.action = na.omit)
@@ -671,19 +677,7 @@ kable(tab_pro,caption="Table 2a.  Proinsulin ratios.")
 ```
 \
 
-Table 2b shows the results of the group comparisons for proinsulin ratios, with the T1D and multiple antibody positive groups combined.
 
-```{r, results='asis',tidy=TRUE, echo=FALSE}
-kable(tab_pro2,caption="Table 2b.  Proinsulin ratios.")
-```
-\
-
-Table 2c shows the results of the group comparisons for proinsulin ratios, with the T1D group excluded.
-
-```{r, results='asis',tidy=TRUE, echo=FALSE}
-kable(tab_pro3,caption="Table 2c.  Proinsulin ratios.")
-```
-\
 
 After adjusting for age, sex, and BMI, the groups were not significantly different (p=`r pval_final.group`).  Table 3 shows the differences between all pairwise comparisons of groups, using Tukey's HSD test.
 
@@ -699,19 +693,6 @@ kable(corr_pro,caption="Table 4.  Correlation of proinsulin ratios with antibody
 ```
 \
 
-Table 5a shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts T1D.
-
-```{r, results='asis',tidy=TRUE, echo=FALSE}
-kable(log_t1d,caption="Table 5a.  Logistic regression of the earliest pro-insulin ratio vs. T1D.")
-```
-\
-
-Table 5b shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts T1D, after adjusting for sex, age, and BMI.
-
-```{r, results='asis',tidy=TRUE, echo=FALSE}
-kable(log_t1d_adj,caption="Table 5b.  Logistic regression of the earliest pro-insulin ratio vs. T1D, adjusting for sex, age, and BMI.")
-```
-\
 
 Table 6a shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts IGTT.
 
