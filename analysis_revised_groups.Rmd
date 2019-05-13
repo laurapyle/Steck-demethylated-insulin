@@ -541,6 +541,7 @@ log_igtt_adj$Predictor<-c("Proinsulin ratio","Age","Male sex","BMI")
 
 # longitudinal analysis - this version is using only visits with PI:C, switch next line back to alldata to change
 long <- a[!is.na(alldata$time),]
+long <- long[!is.na(long$Random_ID),]
 # create variable with floor of year
 long$year_floor=as.numeric(floor(long$years))
 
@@ -559,7 +560,8 @@ mix_year_test <- lme(Pro_pep~ year_floor + as.factor(final.group) + year_floor:a
 mix_year <- lme(Pro_pep~ year_floor + as.factor(final.group) + year_floor:as.factor(final.group), random = ~1 + year_floor | Random_ID, data=long, na.action = na.omit,control=ctrl)
 
 preddata <- expand.grid(final.group=unique(long$final.group))
-preddata <- preddata[!is.na(preddata$final.group),]
+preddata <- as.data.frame(preddata[!is.na(preddata$final.group),])
+colnames(preddata)="final.group"
 for(i in 1:nrow(preddata)) {
     temp <- subset(long,final.group==paste0(preddata$final.group[i]))
     preddata$min[i] <- min(temp$year_floor)
