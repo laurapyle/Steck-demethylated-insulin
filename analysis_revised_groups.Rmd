@@ -540,8 +540,10 @@ mix <- lme(Pro_pep~ time + as.factor(final.group) + time:as.factor(final.group),
 mixt <- anova.lme(mix,type="marginal")
 # plots of predicted values by year
 mix_year_test <- lme(Pro_pep~ year_floor + as.factor(final.group) + year_floor:as.factor(final.group), random = ~1 + year_floor | Random_ID, data=long, na.action = na.omit)
-mix_year <- lmer(Pro_pep~ year_floor + as.factor(final.group) + year_floor:as.factor(final.group) 
-                 + (year_floor| Random_ID), data=long, na.action = na.omit)
+# use lmer if going to generate bootstrap CI's, otherwise lme
+#mix_year <- lmer(Pro_pep~ year_floor + as.factor(final.group) + year_floor:as.factor(final.group) 
+#                 + (year_floor| Random_ID), data=long, na.action = na.omit)
+mix_year <- lme(Pro_pep~ year_floor + as.factor(final.group) + year_floor:as.factor(final.group), random = ~1 + year_floor | Random_ID, data=long, na.action = na.omit)
 
 preddata <- expand.grid(final.group=unique(long$final.group))
 for(i in 1:nrow(preddata)) {
@@ -553,27 +555,27 @@ predlong <- reshape(preddata,idvar="final.group",direction = "long",varying = c(
 predlong <- predlong[with(predlong, order(final.group,time)),]
 predlong <- predlong[,-2]
 
-# this is the original code for the plot, but now I am generating bootstrapped SE's for the predictions
+# this is the original code for the plot
 test <- predict(mix_year, level=0, newdata=predlong,se.fit=TRUE,nsim=100,re.form=NA)
 png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time.png")
 p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=final.group)) +
   xlab("Years") + ylab ("PI:C ratio") +
   coord_cartesian(xlim=c(0,15)) +
-  geom_line(data=predlong, aes(y=predict(mix_year, level=0, newdata=predlong,interval="confidence")),size=2) +
+  geom_line(data=predlong, aes(y=predict(mix_year, level=0, newdata=predlong)),size=2) +
   labs(colour="Group") +
   theme_bw(base_size=22) 
 print(p)
 dev.off()
-# trying to modify code to add confidence intervals, but ggplot doesn't like the structure of the predictions
-png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time.png")
-p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=final.group)) +
-  xlab("Years") + ylab ("PI:C ratio") +
-  coord_cartesian(xlim=c(0,15)) +
-  geom_line(data=predlong, aes(y=predict(mix_year, level=0, newdata=predlong,se.fit=TRUE,nsim=100,re.form=NA)),size=2) +
-  labs(colour="Group") +
-  theme_bw(base_size=22) 
-print(p)
-dev.off()
+# trying to modify code to add bootstrapped confidence intervals, but ggplot doesn't like the structure of the predictions
+# png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time.png")
+# p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=final.group)) +
+#   xlab("Years") + ylab ("PI:C ratio") +
+#   coord_cartesian(xlim=c(0,15)) +
+#   geom_line(data=predlong, aes(y=predict(mix_year, level=0, newdata=predlong,se.fit=TRUE,nsim=100,re.form=NA)),size=2) +
+#   labs(colour="Group") +
+#   theme_bw(base_size=22) 
+# print(p)
+# dev.off()
 
 # adjusted longitudinal analysis
 mix_adj <- lme(Pro_pep~ time + as.factor(final.group) + time:as.factor(final.group) + age + Gender + BMI, 
@@ -581,6 +583,24 @@ mix_adj <- lme(Pro_pep~ time + as.factor(final.group) + time:as.factor(final.gro
 # type III tests
 mixt_adj <- anova.lme(mix_adj,type="marginal")
 
+# generating plot from adjusted model
+mix_year_adj <- lme(Pro_pep~ year_floor + as.factor(final.group) + year_floor:as.factor(final.group) + age + Gender + BMI, 
+                    random = ~1 + year_floor | Random_ID, data=long, na.action = na.omit)
+predlong_adj <- predlong
+for(i in 1:nrow(predlong_adj)) {
+  predlong_adj$age[i] <- mean(long[long$final.group==paste0(predlong_adj$final.group[i]),]$age)
+  predlong_adj$BMI[i] <- mean(long[long$final.group==paste0(predlong_adj$final.group[i]),]$BMI,na.rm=TRUE)
+  predlong_adj$Gender[i] <- 0.5
+}
+png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_adjusted.png")
+p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=final.group)) +
+  xlab("Years") + ylab ("PI:C ratio") +
+  coord_cartesian(xlim=c(0,15)) +
+  geom_line(data=predlong_adj, aes(y=predict(mix_year_adj, level=0, newdata=predlong_adj)),size=2) +
+  labs(colour="Group") +
+  theme_bw(base_size=22) 
+print(p)
+dev.off()
 ```
 
 ## Background
