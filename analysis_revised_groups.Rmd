@@ -290,18 +290,6 @@ alldata$Draw_Date <- as.Date(alldata$Draw_Date)
 alldata$time <- alldata$Draw_Date - alldata$first_date
 alldata$years <- alldata$time/365.25
 
-# check range of years for non-missing pro-pep
-a <- alldata[!is.na(alldata$Pro_pep),]
-temp <- aggregate(a$Draw_Date,by=list(a$Random_ID),min)
-names(temp) <- c("Random_ID","first_pic_date")
-temp$first_pic_date <- as.Date(temp$first_pic_date)
-a <- merge(a,temp,by = "Random_ID")
-a$Draw_Date <- as.Date(a$Draw_Date)
-a$time <- a$Draw_Date - a$first_pic_date
-a$years <- a$time/365.25
-hist(as.numeric(a$years))
-
-
 # spaghetti plots of outcomes
 #qplot(years,Pro_pep,data=alldata,group=Random_ID,color=group,geom="line")
 #qplot(years,U_MplusU_Ratio_Zen,data=alldata,group=Random_ID,color=group,geom="line")
@@ -540,8 +528,18 @@ log_igtt_adj <- mod_tablog(log2_adj)
 log_igtt_adj$Predictor<-c("Proinsulin ratio","Age","Male sex","BMI")
 
 # longitudinal analysis - this version is using only visits with PI:C, switch next line back to alldata to change
-long <- a[!is.na(alldata$time),]
-long <- long[!is.na(long$Random_ID),]
+#long <- alldata[!is.na(alldata$time),]
+# check range of years for non-missing pro-pep
+a <- alldata[!is.na(alldata$Pro_pep),]
+temp <- aggregate(a$Draw_Date,by=list(a$Random_ID),min)
+names(temp) <- c("Random_ID","first_pic_date")
+temp$first_pic_date <- as.Date(temp$first_pic_date)
+a <- merge(a,temp,by = "Random_ID")
+a$Draw_Date <- as.Date(a$Draw_Date)
+a$time <- a$Draw_Date - a$first_pic_date
+a$years <- a$time/365.25
+hist(as.numeric(a$years))
+long <- a[!is.na(long$Random_ID),]
 # create variable with floor of year
 long$year_floor=as.numeric(floor(long$years))
 
@@ -553,7 +551,7 @@ mix <- lme(Pro_pep~ time + as.factor(final.group) + time:as.factor(final.group),
 # type III tests
 mixt <- anova.lme(mix,type="marginal")
 # plots of predicted values by year
-mix_year_test <- lme(Pro_pep~ year_floor + as.factor(final.group) + year_floor:as.factor(final.group), random = ~1 + year_floor | Random_ID, data=long, na.action = na.omit,control=ctrl)
+#mix_year_test <- lme(Pro_pep~ year_floor + as.factor(final.group) + year_floor:as.factor(final.group), random = ~1 + year_floor | Random_ID, data=long, na.action = #na.omit,control=ctrl)
 # use lmer if going to generate bootstrap CI's, otherwise lme
 #mix_year <- lmer(Pro_pep~ year_floor + as.factor(final.group) + year_floor:as.factor(final.group) 
 #                 + (year_floor| Random_ID), data=long, na.action = na.omit)
