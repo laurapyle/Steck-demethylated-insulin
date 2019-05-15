@@ -489,10 +489,15 @@ diffs_final.group <- TukeyHSD(lm.pro, which = "as.factor(final.group)")
 
 # do proinsulin ratios correlate with biochemical and ECL antibody levels
 corr_pro <- rcorr(as.matrix(allpro[, c( "Pro_pep","gadz","ia2z","mIAA","ZnT8","ICA",
-                                        "ECL_GADA","ECL_IA2A","ECL_IAA")])
-                  ,type = "spearman")
+                                        "ECL_GADA","ECL_IA2A","ECL_IAA")]),type = "spearman")
 corr_pro <- flattenCorrMatrix(corr_pro$r, corr_pro$P)
 corr_pro <- corr_pro[corr_pro$row=="Pro_pep",]
+
+# correlations excluding ab negative
+corr_pro_noneg <- rcorr(as.matrix(allpro[allpro$final.group != "Negative", c( "Pro_pep","gadz","ia2z","mIAA","ZnT8","ICA",
+                                        "ECL_GADA","ECL_IA2A","ECL_IAA")]),type = "spearman")
+corr_pro_noneg <- flattenCorrMatrix(corr_pro_noneg$r, corr_pro_noneg$P)
+corr_pro_noneg <- corr_pro_noneg[corr_pro_noneg$row=="Pro_pep",]
 
 # write cross-sectional dataset for Taylor
 write.csv(allpro,file="S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\allpro.csv")
@@ -582,14 +587,14 @@ print(p)
 dev.off()
 
 # trying to add subjects back in
-png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_with_subjects.png")
-p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=final.group)) +
-  geom_point(size=3) +
-  geom_line(data=predlong, aes(y=predict(mix_year, level=0, newdata=predlong), size="Population")) +
-  scale_size_manual(name="Predictions", values=c("Subjects"=0.5, "Population"=3)) +
-  theme_bw(base_size=22) 
-print(p)
-dev.off()
+# png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_with_subjects.png")
+# p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=final.group)) +
+#   geom_point(size=3) +
+#   geom_line(data=predlong, aes(y=predict(mix_year, level=0, newdata=predlong), size="Population")) +
+#   scale_size_manual(name="Predictions", values=c("Subjects"=0.5, "Population"=3)) +
+#   theme_bw(base_size=22) 
+# print(p)
+# dev.off()
 
 
 
@@ -606,28 +611,28 @@ dev.off()
 
 # adjusted longitudinal analysis
 mix_adj <- lme(Pro_pep~ time + as.factor(final.group) + time:as.factor(final.group) + age + Gender + BMI, 
-               random = ~1 + time | Random_ID, data=long, na.action = na.omit)
+               random = ~1 | Random_ID, data=long, na.action = na.omit)
 # type III tests
 mixt_adj <- anova.lme(mix_adj,type="marginal")
 
 # generating plot from adjusted model
-mix_year_adj <- lme(Pro_pep~ year_floor + as.factor(final.group) + year_floor:as.factor(final.group) + age + Gender + BMI, 
-                    random = ~1 + year_floor | Random_ID, data=long, na.action = na.omit)
-predlong_adj <- predlong
-for(i in 1:nrow(predlong_adj)) {
-  predlong_adj$age[i] <- mean(long[long$final.group==paste0(predlong_adj$final.group[i]),]$age)
-  predlong_adj$BMI[i] <- mean(long[long$final.group==paste0(predlong_adj$final.group[i]),]$BMI,na.rm=TRUE)
-  predlong_adj$Gender[i] <- 0.5
-}
-png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_adjusted.png")
-p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=final.group)) +
-  xlab("Years") + ylab ("PI:C ratio") +
-  coord_cartesian(xlim=c(0,15)) +
-  geom_line(data=predlong_adj, aes(y=predict(mix_year_adj, level=0, newdata=predlong_adj)),size=2) +
-  labs(colour="Group") +
-  theme_bw(base_size=22) 
-print(p)
-dev.off()
+# mix_year_adj <- lme(Pro_pep~ year_floor + as.factor(final.group) + year_floor:as.factor(final.group) + age + Gender + BMI, 
+#                     random = ~1 + year_floor | Random_ID, data=long, na.action = na.omit)
+# predlong_adj <- predlong
+# for(i in 1:nrow(predlong_adj)) {
+#   predlong_adj$age[i] <- mean(long[long$final.group==paste0(predlong_adj$final.group[i]),]$age)
+#   predlong_adj$BMI[i] <- mean(long[long$final.group==paste0(predlong_adj$final.group[i]),]$BMI,na.rm=TRUE)
+#   predlong_adj$Gender[i] <- 0.5
+# }
+# png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_adjusted.png")
+# p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=final.group)) +
+#   xlab("Years") + ylab ("PI:C ratio") +
+#   coord_cartesian(xlim=c(0,15)) +
+#   geom_line(data=predlong_adj, aes(y=predict(mix_year_adj, level=0, newdata=predlong_adj)),size=2) +
+#   labs(colour="Group") +
+#   theme_bw(base_size=22) 
+# print(p)
+# dev.off()
 ```
 
 ## Background
@@ -713,10 +718,17 @@ kable(diffs_final.group$`as.factor(final.group)`,caption="Table 3.  Pairwise com
 ```
 \
 
-Table 4 shows the correlations of proinsulin ratios with continuous antibody levels at the timepoint selected for cross-sectional analysis.
+Table 4a shows the correlations of proinsulin ratios with continuous antibody levels at the timepoint selected for cross-sectional analysis, in all subjects.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
-kable(corr_pro,caption="Table 4.  Correlation of proinsulin ratios with antibody levels.")
+kable(corr_pro,caption="Table 4a.  Correlation of proinsulin ratios with antibody levels, in all subjects.")
+```
+\
+
+Table 4b shows the correlations of proinsulin ratios with continuous antibody levels at the timepoint selected for cross-sectional analysis, after excluding antibody negative subjects.
+
+```{r, results='asis',tidy=TRUE, echo=FALSE}
+kable(corr_pro_noneg,caption="Table 4a.  Correlation of proinsulin ratios with antibody levels, after excluding antibody negative subjects.")
 ```
 \
 
@@ -765,4 +777,15 @@ kable(mixt_adj,caption="Table 8.  ANOVA table for mixed effects model, adjusted 
 Figure 1 shows box plots of the PI:C ratio by year.
 ```{r plotnumeric, echo=FALSE}
 boxplot(long$Pro_pep~long$year_floor)
+```
+
+Figure 2 shows PI:C ratios over time by group.
+```{r, echo=FALSE}
+p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=final.group)) +
+  xlab("Years") + ylab ("PI:C ratio") +
+  coord_cartesian(xlim=c(0,3)) +
+  geom_line(data=predlong, aes(y=predict(mix_year, level=0, newdata=predlong)),size=2) +
+  labs(colour="Group") +
+  theme_bw(base_size=22) 
+print(p)
 ```

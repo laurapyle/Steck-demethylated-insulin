@@ -504,10 +504,20 @@ diffs_newcat <- TukeyHSD(lm.pro, which = "as.factor(newcat)")
 
 # do proinsulin ratios correlate with biochemical and ECL antibody levels
 corr_pro <- rcorr(as.matrix(allpro[, c( "Pro_pep","gadz","ia2z","mIAA","ZnT8","ICA",
-                                        "ECL_GADA","ECL_IA2A","ECL_IAA")])
-                  ,type = "spearman")
+                                        "ECL_GADA","ECL_IA2A","ECL_IAA")]),type = "spearman")
 corr_pro <- flattenCorrMatrix(corr_pro$r, corr_pro$P)
 corr_pro <- corr_pro[corr_pro$row=="Pro_pep",]
+
+# correlations in single mIAA positive, just mIAA and ECL_IAA
+corr_pro_miaa <- rcorr(as.matrix(allpro[allpro$newcat=="Single mIAA positive", c( "Pro_pep","mIAA","ECL_IAA")]),type = "spearman")
+corr_pro_miaa <- flattenCorrMatrix(corr_pro_miaa$r, corr_pro_miaa$P)
+corr_pro_miaa <- corr_pro_miaa[corr_pro_miaa$row=="Pro_pep",]
+
+# correlations in single GADA positive, just GADA and ECL_GADA
+corr_pro_gad <- rcorr(as.matrix(allpro[allpro$newcat=="Single GAD positive", c( "Pro_pep","gadz","ECL_GADA")]),type = "spearman")
+corr_pro_gad <- flattenCorrMatrix(corr_pro_gad$r, corr_pro_gad$P)
+corr_pro_gad <- corr_pro_gad[corr_pro_gad$row=="Pro_pep",]
+
 
 # partial correlations adjusted for age, sex, gender
 #blah <- na.omit(remove_all_labels(allpro))
@@ -617,13 +627,26 @@ kable(diffs_newcat$`as.factor(newcat)`,caption="Table 3.  Pairwise comparisons o
 ```
 \
 
-Table 4 shows the correlations of proinsulin ratios with continuous antibody levels at the timepoint selected for cross-sectional analysis.
+Table 4a shows the correlations of proinsulin ratios with continuous antibody levels at the timepoint selected for cross-sectional analysis, in both single mIAA positive and single GADA positive subjects.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
-kable(corr_pro,caption="Table 4.  Correlation of proinsulin ratios with antibody levels.")
+kable(corr_pro,caption="Table 4a.  Correlation of proinsulin ratios with antibody levels, in both single mIAA positive and single GADA positive subjects.")
 ```
 \
 
+Table 4b shows the correlations of proinsulin ratios with continuous antibody levels at the timepoint selected for cross-sectional analysis, in single mIAA positive subjects only.
+
+```{r, results='asis',tidy=TRUE, echo=FALSE}
+kable(corr_pro_miaa,caption="Table 4b.  Correlation of proinsulin ratios with antibody levels, in single mIAA positive subjects only.")
+```
+\
+
+Table 4c shows the correlations of proinsulin ratios with continuous antibody levels at the timepoint selected for cross-sectional analysis, in single GADA positive subjects only.
+
+```{r, results='asis',tidy=TRUE, echo=FALSE}
+kable(corr_pro_gad,caption="Table 4c.  Correlation of proinsulin ratios with antibody levels, in single GADA positive subjects only.")
+```
+\
 
 Table 7 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time.  The trajectories in the two groups were not significantly different (p=`r mixt[4,4]`).
 
