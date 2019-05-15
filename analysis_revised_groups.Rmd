@@ -417,7 +417,7 @@ allpro$age <- floor(allpro$DOB %--% allpro$Draw_Date / dyears(1))
 label(allpro$Pro_pep)="Proinsulin ratio"
 
 # correct group2 variable in allpro
-allpro$group2 <- ifelse(allpro$final.group=="T1D" | allpro$final.group=="Multiple ab positive","T1D/multiple ab pos",allpro$final.group)
+allpro$group2 <- as.factor(ifelse(allpro$final.group=="T1D" | allpro$final.group=="Multiple ab positive","T1D/multiple ab pos",allpro$final.group))
 nneg <- length(unique(allpro[allpro$final.group=="Negative",]$Random_ID))
 nsing <- length(unique(allpro[allpro$final.group=="Single ab positive",]$Random_ID))
 nmult <- length(unique(allpro[allpro$final.group=="Multiple ab positive",]$Random_ID))

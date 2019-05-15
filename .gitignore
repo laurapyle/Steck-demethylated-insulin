@@ -24,3 +24,6 @@ analysis_revised_groups_no_T1D.docx
 analysis_revised_groups_files/figure-docx/plotnumeric-1.png
 analysis_revised_groups_T1D_mult_combined.docx
 .Rhistory
+analysis_revised_groups_T1D_mult_combined_files/figure-docx/plotnumeric-1.png
+*.png
+.Rhistory

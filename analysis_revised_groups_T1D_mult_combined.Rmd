@@ -267,7 +267,7 @@ diagnosis.table$final.group[diagnosis.table$final.group==3] <- "T1D"
 allresults <- merge(allresults,diagnosis.table,by="Random_ID")
 alldata <- merge(alldata,diagnosis.table,by = "Random_ID")
 # create new variable for group with T1D and multiple ab combined
-alldata$group2 <- ifelse(alldata$final.group=="T1D" | alldata$final.group=="Multiple ab positive","T1D/multiple ab pos",alldata$final.group)
+alldata$group2 <- as.factor(ifelse(alldata$final.group=="T1D" | alldata$final.group=="Multiple ab positive","T1D/multiple ab pos",alldata$final.group))
 
 # Merge the diagnosis back into the full table.
 
@@ -553,9 +553,15 @@ mixt <- anova.lme(mix,type="marginal")
 # plots of predicted values by year
 #mix_year_test <- lme(Pro_pep~ year_floor + as.factor(group2) + year_floor:as.factor(group2), random = ~1 + year_floor | Random_ID, data=long, na.action = #na.omit,control=ctrl)
 # use lmer if going to generate bootstrap CI's, otherwise lme
-#mix_year <- lmer(Pro_pep~ year_floor + as.factor(final.group) + year_floor:as.factor(final.group) 
+# testing convergence
+#mix_year_test <- lmer(Pro_pep~ year_floor + as.factor(group2) + year_floor:as.factor(group2) 
 #                 + (year_floor| Random_ID), data=long, na.action = na.omit)
-mix_year <- lme(Pro_pep~ year_floor + as.factor(group2) + year_floor:as.factor(group2), random = ~1 + year_floor | Random_ID, data=long, na.action = na.omit,control=ctrl)
+# model is singular, simplify by removing random slope
+#mix_year_test_noslope <- lmer(Pro_pep~ year_floor + as.factor(group2) + year_floor:as.factor(group2) 
+#                 + (1 | Random_ID), data=long, na.action = na.omit)
+
+#mix_year <- lme(Pro_pep~ year_floor + as.factor(group2) + year_floor:as.factor(group2), random = ~1 + year_floor | Random_ID, data=long, na.action = na.omit,control=ctrl)
+mix_year_noslope <- lme(Pro_pep~ year_floor + as.factor(group2) + year_floor:as.factor(group2), random = ~1 | Random_ID, data=long, na.action = na.omit,control=ctrl)
 preddata <- expand.grid(group2=unique(long$group2))
 preddata <- as.data.frame(preddata[!is.na(preddata$group2),])
 colnames(preddata)="group2"
@@ -569,26 +575,26 @@ predlong <- predlong[with(predlong, order(group2,time)),]
 predlong <- predlong[,-2]
 
 # this is the original code for the plot
-test <- predict(mix_year, level=0, newdata=predlong)
+#test <- predict(mix_year_noslope, level=0, newdata=predlong,asList = TRUE)
 png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_T1D_mult_combined.png")
 p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=group2)) +
   xlab("Years") + ylab ("PI:C ratio") +
   coord_cartesian(xlim=c(0,3)) +
-  geom_line(data=predlong, aes(y=predict(mix_year, level=0, newdata=predlong)),size=2) +
+  geom_line(data=predlong, aes(y=predict(mix_year_noslope, level=0, newdata=predlong)),size=2) +
   labs(colour="Group") +
   theme_bw(base_size=22) 
 print(p)
 dev.off()
 
 # trying to add subjects back in
-png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_with_subjects_T1D_mult_combined.png")
-p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=group2)) +
-  geom_point(size=3) +
-  geom_line(data=predlong, aes(y=predict(mix_year, level=0, newdata=predlong), size="Population")) +
-  scale_size_manual(name="Predictions", values=c("Subjects"=0.5, "Population"=3)) +
-  theme_bw(base_size=22) 
-print(p)
-dev.off()
+# png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_with_subjects_T1D_mult_combined.png")
+# p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=group2)) +
+#   geom_point(size=3) +
+#   geom_line(data=predlong, aes(y=predict(mix_year, level=0, newdata=predlong), size="Population")) +
+#   scale_size_manual(name="Predictions", values=c("Subjects"=0.5, "Population"=3)) +
+#   theme_bw(base_size=22) 
+# print(p)
+# dev.off()
 
 
 
@@ -605,28 +611,28 @@ dev.off()
 
 # adjusted longitudinal analysis
 mix_adj <- lme(Pro_pep~ time + as.factor(group2) + time:as.factor(group2) + age + Gender + BMI, 
-               random = ~1 + time | Random_ID, data=long, na.action = na.omit)
+               random = ~1 | Random_ID, data=long, na.action = na.omit)
 # type III tests
 mixt_adj <- anova.lme(mix_adj,type="marginal")
 
 # generating plot from adjusted model
-mix_year_adj <- lme(Pro_pep~ year_floor + as.factor(group2) + year_floor:as.factor(group2) + age + Gender + BMI, 
-                    random = ~1 + year_floor | Random_ID, data=long, na.action = na.omit)
-predlong_adj <- predlong
-for(i in 1:nrow(predlong_adj)) {
-  predlong_adj$age[i] <- mean(long[long$group2==paste0(predlong_adj$group2[i]),]$age)
-  predlong_adj$BMI[i] <- mean(long[long$group2==paste0(predlong_adj$group2[i]),]$BMI,na.rm=TRUE)
-  predlong_adj$Gender[i] <- 0.5
-}
-png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_adjusted_T1D_mult_combined.png")
-p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=group2)) +
-  xlab("Years") + ylab ("PI:C ratio") +
-  coord_cartesian(xlim=c(0,15)) +
-  geom_line(data=predlong_adj, aes(y=predict(mix_year_adj, level=0, newdata=predlong_adj)),size=2) +
-  labs(colour="Group") +
-  theme_bw(base_size=22) 
-print(p)
-dev.off()
+# mix_year_adj <- lme(Pro_pep~ year_floor + as.factor(group2) + year_floor:as.factor(group2) + age + Gender + BMI, 
+#                     random = ~1 + year_floor | Random_ID, data=long, na.action = na.omit)
+# predlong_adj <- predlong
+# for(i in 1:nrow(predlong_adj)) {
+#   predlong_adj$age[i] <- mean(long[long$group2==paste0(predlong_adj$group2[i]),]$age)
+#   predlong_adj$BMI[i] <- mean(long[long$group2==paste0(predlong_adj$group2[i]),]$BMI,na.rm=TRUE)
+#   predlong_adj$Gender[i] <- 0.5
+# }
+# png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_adjusted_T1D_mult_combined.png")
+# p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=group2)) +
+#   xlab("Years") + ylab ("PI:C ratio") +
+#   coord_cartesian(xlim=c(0,15)) +
+#   geom_line(data=predlong_adj, aes(y=predict(mix_year_adj, level=0, newdata=predlong_adj)),size=2) +
+#   labs(colour="Group") +
+#   theme_bw(base_size=22) 
+# print(p)
+# dev.off()
 ```
 
 ## Background
@@ -750,4 +756,15 @@ kable(mixt_adj,caption="Table 8.  ANOVA table for mixed effects model, adjusted 
 Figure 1 shows box plots of the PI:C ratio by year.
 ```{r plotnumeric, echo=FALSE}
 boxplot(long$Pro_pep~long$year_floor)
+```
+
+Figure 2 shows PI:C ratio over time in the three groups.
+```{r, echo=FALSE}
+p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=group2)) +
+  xlab("Years") + ylab ("PI:C ratio") +
+  coord_cartesian(xlim=c(0,3)) +
+  geom_line(data=predlong, aes(y=predict(mix_year_noslope, level=0, newdata=predlong)),size=2) +
+  labs(colour="Group") +
+  theme_bw(base_size=22) 
+print(p)
 ```
