@@ -539,7 +539,7 @@ a$Draw_Date <- as.Date(a$Draw_Date)
 a$time <- a$Draw_Date - a$first_pic_date
 a$years <- a$time/365.25
 hist(as.numeric(a$years))
-long <- a[!is.na(long$Random_ID),]
+long <- a[!is.na(a$Random_ID),]
 # create variable with floor of year
 long$year_floor=as.numeric(floor(long$years))
 

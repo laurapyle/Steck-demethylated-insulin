@@ -569,7 +569,7 @@ predlong <- predlong[with(predlong, order(group2,time)),]
 predlong <- predlong[,-2]
 
 # this is the original code for the plot
-test <- predict(mix_year, level=0, newdata=predlong,se.fit=TRUE,nsim=100,re.form=NA)
+test <- predict(mix_year, level=0, newdata=predlong)
 png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_T1D_mult_combined.png")
 p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=group2)) +
   xlab("Years") + ylab ("PI:C ratio") +
