@@ -269,7 +269,7 @@ diagnosis.table$final.group[diagnosis.table$final.group==3] <- "T1D"
 allresults <- merge(allresults,diagnosis.table,by="Random_ID")
 single_gada_miaa <- merge(single_gada_miaa,diagnosis.table,by = "Random_ID")
 # create new variable for group with T1D and multiple ab combined
-single_gada_miaa$group2 <- ifelse(single_gada_miaa$final.group=="T1D" | single_gada_miaa$final.group=="Multiple ab positive","T1D/multiple ab pos",single_gada_miaa$final.group)
+#single_gada_miaa$group2 <- ifelse(single_gada_miaa$final.group=="T1D" | single_gada_miaa$final.group=="Multiple ab positive","T1D/multiple ab pos",single_gada_miaa$final.group)
 
 # of those who were previously classified as single antibody positive, describe # of single ab positive visits
 singlecheck <- single_gada_miaa[single_gada_miaa$final.group=="Single ab positive",

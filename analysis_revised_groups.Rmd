@@ -422,7 +422,6 @@ nneg <- length(unique(allpro[allpro$final.group=="Negative",]$Random_ID))
 nsing <- length(unique(allpro[allpro$final.group=="Single ab positive",]$Random_ID))
 nmult <- length(unique(allpro[allpro$final.group=="Multiple ab positive",]$Random_ID))
 
-
 # for table 1, need the draw date corresponding to the proins used in cross sectional analyses
 datepro <- allpro[c("Random_ID","Draw_Date")]
 names(datepro) <- c("Random_ID","Date_proins")
@@ -435,11 +434,11 @@ tab1data <- merge(alldata,getdates,by=c("Random_ID","Draw_Date"))
 tab1data$age <- floor(tab1data$DOB %--% tab1data$Draw_Date / dyears(1))
 label(tab1data$Pro_pep)="Proinsulin ratio"
 
-
 # need to update final.group variable using what is in allpro
 correct_group <- subset(allpro, select =c(Random_ID,final.group))
 tab1data <- subset(tab1data, select = -c(final.group))
 tab1data <- merge(tab1data,correct_group,by="Random_ID",all=TRUE)
+tab1data$group2 <- as.factor(ifelse(tab1data$final.group=="T1D" | tab1data$final.group=="Multiple ab positive","T1D/multiple ab pos",tab1data$final.group))
 
 # ++++++++++++++++++++++++++++
 # flattenCorrMatrix
@@ -661,7 +660,7 @@ The following data manipulation and cleaning steps were performed:
 8) For analyses using the continuous value of the antibodies, GAD65 and GAD65H were combined by calculating the Z-score of each variable and then combining the Z-scores into one variable.  The same procedure was followed for ICA512/IA2H.
 9) There were `r misspro` subjects who did not have any proinsulin ratio results who were excluded from analysis.   
 10) Participants were classified in the T1D group if they ever had a diagnosis of T1D.  
-11) If a participant was not in the T1D group, they were classfied by antibody status as below.  This resulted in `r length(unique(t1d$Random_ID))` participants in the T1D group, `r nmult` participants in the multiple antibody positive group, `r nsing` participants in the single antibody positive group, and `r nneg` participants in the negative group.
+11) If a participant was not in the T1D group, they were classfied by antibody status as below.  This resulted in `r length(unique(tab1data[tab1data$final.group=="T1D",]$Random_ID))` participants in the T1D group, `r nmult` participants in the multiple antibody positive group, `r nsing` participants in the single antibody positive group, and `r nneg` participants in the negative group.
 + If they were multiple antibody positive at any visit, they were classified as multiple antibody positive.
 + If they were never multiple antibody positive, but were single antibody positive at 2 or more visits, they were classified as single antibody positive.
 + Otherwise, they were classified as antibody negative.
