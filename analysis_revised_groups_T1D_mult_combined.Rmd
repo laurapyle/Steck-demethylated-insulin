@@ -653,6 +653,15 @@ mixneg_mult_t1d_t <- anova.lme(mixneg_mult_t1d,type="marginal")
 
 mix_year_neg_mult_t1d_noslope <- lme(Pro_pep~ year_floor + as.factor(group2) + year_floor:as.factor(group2), random = ~1 | Random_ID, data=neg_mult_t1d, na.action = na.omit,control=ctrl)
 mix_year_neg_mult_t1d_noslope_t <- anova.lme(mix_year_neg_mult_t1d_noslope,type="marginal")
+
+# two group model adjusted for covariates
+mix_year_neg_mult_t1d_noslope_adj <- lme(Pro_pep~ year_floor + as.factor(group2) + year_floor:as.factor(group2) + age + Gender + BMI, 
+               random = ~1 | Random_ID, data=neg_mult_t1d, na.action = na.omit)
+# type III tests
+mix_year_neg_mult_t1d_noslope_adj_t <- anova.lme(mix_year_neg_mult_t1d_noslope_adj,type="marginal")
+
+
+
 ```
 
 ## Background
@@ -766,7 +775,7 @@ kable(mixt,caption="Table 7.  ANOVA table for mixed effects model.")
 ```
 \
 
-Table 8 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time, after adjusting for sex, age, and BMI.  The trajectories in the three groups were not significantly different (p=`r mixt_adj[3,4]`).
+Table 8 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time, after adjusting for sex, age, and BMI.  The trajectories in the three groups were not significantly different (p=`r mixt_adj[7,4]`).
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(mixt_adj,caption="Table 8.  ANOVA table for mixed effects model, adjusted for sex, age, and BMI.")
@@ -793,6 +802,14 @@ Table 9 shows the results of the mixed model testing whether the groups differ i
 kable(mix_year_neg_mult_t1d_noslope_t,caption="Table 9.  ANOVA table for mixed effects model, using only antibody negative and multiple antibody positive/T1D groups.")
 ```
 \
+
+Table 10 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time, using only the antibody negative and multiple antibody positive/T1D groups, and after adjustment for sex, age, and BMI.  The trajectories in the two groups were significantly different (p=`r mix_year_neg_mult_t1d_noslope_adj_t[7,4]`).
+
+```{r, results='asis',tidy=TRUE, echo=FALSE}
+kable(mix_year_neg_mult_t1d_noslope_adj_t,caption="Table 10.  ANOVA table for mixed effects model, using only antibody negative and multiple antibody positive/T1D groups, adjusting for sex, age, and BMI.")
+```
+\
+
 
 Figure 2 shows PI:C ratio over time in the antibody negative and multiple antibody positive/T1D groups.
 \
