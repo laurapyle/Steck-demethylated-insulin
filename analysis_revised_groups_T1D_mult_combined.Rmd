@@ -581,6 +581,8 @@ predlong <- reshape(preddata,idvar="group2",direction = "long",varying = c("min"
 predlong <- predlong[with(predlong, order(group2,time)),]
 predlong <- predlong[,-2]
 
+predlong_neg_mult_t1d <- predlong[predlong$group2=="Negative" | predlong$group2=="T1D/multiple ab pos",]
+
 # this is the original code for the plot
 #test <- predict(mix_year_noslope, level=0, newdata=predlong,asList = TRUE)
 png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_T1D_mult_combined.png")
@@ -640,6 +642,17 @@ mixt_adj <- anova.lme(mix_adj,type="marginal")
 #   theme_bw(base_size=22) 
 # print(p)
 # dev.off()
+
+# mixed effects model with only ab negative and multiple ab/T1D groups
+neg_mult_t1d <- long[long$group2=="Negative" | long$group2=="T1D/multiple ab pos",]
+neg_mult_t1d$group2 <- droplevels(neg_mult_t1d$group2)
+ctrl <- lmeControl(opt='optim');
+mixneg_mult_t1d <- lme(Pro_pep~ time + as.factor(group2) + time:as.factor(group2), random = ~1 + time | Random_ID, data=neg_mult_t1d, na.action = na.omit,control=ctrl)
+# type III tests
+mixneg_mult_t1d_t <- anova.lme(mixneg_mult_t1d,type="marginal")
+
+mix_year_neg_mult_t1d_noslope <- lme(Pro_pep~ year_floor + as.factor(group2) + year_floor:as.factor(group2), random = ~1 | Random_ID, data=neg_mult_t1d, na.action = na.omit,control=ctrl)
+mix_year_neg_mult_t1d_noslope_t <- anova.lme(mix_year_neg_mult_t1d_noslope,type="marginal")
 ```
 
 ## Background
@@ -760,17 +773,36 @@ kable(mixt_adj,caption="Table 8.  ANOVA table for mixed effects model, adjusted 
 ```
 \
 
-Figure 1 shows box plots of the PI:C ratio by year.
-```{r plotnumeric, echo=FALSE}
-boxplot(long$Pro_pep~long$year_floor)
-```
+Figure 1 shows PI:C ratio over time in the three groups.
+\
+\
 
-Figure 2 shows PI:C ratio over time in the three groups.
 ```{r, echo=FALSE}
 p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=group2)) +
   xlab("Years") + ylab ("PI:C ratio") +
   coord_cartesian(xlim=c(0,3)) + 
   geom_line(data=predlong, aes(y=predict(mix_year_noslope, level=0, newdata=predlong)),size=2) +
+  labs(colour="Group") +
+  theme_bw(base_size=22) 
+print(p)
+```
+
+Table 9 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time, using only the antibody negative and multiple antibody positive/T1D groups.  The trajectories in the two groups were not significantly different (p=`r mix_year_neg_mult_t1d_noslope_t[4,4]`).
+
+```{r, results='asis',tidy=TRUE, echo=FALSE}
+kable(mix_year_neg_mult_t1d_noslope_t,caption="Table 9.  ANOVA table for mixed effects model, using only antibody negative and multiple antibody positive/T1D groups.")
+```
+\
+
+Figure 2 shows PI:C ratio over time in the antibody negative and multiple antibody positive/T1D groups.
+\
+\
+
+```{r, echo=FALSE}
+p <- ggplot(neg_mult_t1d, aes(x=year_floor, y=Pro_pep, colour=group2)) +
+  xlab("Years") + ylab ("PI:C ratio") +
+  coord_cartesian(xlim=c(0,3)) + 
+  geom_line(data=predlong_neg_mult_t1d, aes(y=predict(mix_year_neg_mult_t1d_noslope, level=0, newdata=predlong_neg_mult_t1d)),size=2) +
   labs(colour="Group") +
   theme_bw(base_size=22) 
 print(p)
