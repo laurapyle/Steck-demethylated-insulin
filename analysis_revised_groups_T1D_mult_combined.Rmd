@@ -22,11 +22,12 @@ library(tidyr)
 #library(ppcor)
 #library(sjlabelled)
 library(lme4)
-library(bootpredictlme4)
+#library(bootpredictlme4)
+
 
 # read in the data
-longitudinal_visit_info <- read.csv("S:/Shared Projects/Laura/BDC/Projects/Andrea Steck/Trialnet progressors analysis/Fourth analysis - demethylated insulin with updated dataset/Data/longitudinal 051019.csv")
-ParticipantInfo_risk <- read.csv("S:/Shared Projects/Laura/BDC/Projects/Andrea Steck/Trialnet progressors analysis/Fourth analysis - demethylated insulin with updated dataset/Data/Participant Info risk 051019.csv",na.strings = c("NA"," ","","      "))
+longitudinal_visit_info <- read.csv("T:/Andrea Steck/Trialnet progressors analysis/Fourth analysis - demethylated insulin with updated dataset/Data/longitudinal 051019.csv")
+ParticipantInfo_risk <- read.csv("T:/Andrea Steck/Trialnet progressors analysis/Fourth analysis - demethylated insulin with updated dataset/Data/Participant Info risk 051019.csv",na.strings = c("NA"," ","","      "))
 
 source("C:\\Users\\pylell\\Documents\\GitHub\\General-code\\temp_table1.r")
 source("C:\\Users\\pylell\\Documents\\GitHub\\General-code\\01_functions.r")
