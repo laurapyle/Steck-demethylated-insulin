@@ -492,7 +492,7 @@ diffs_final.group <- TukeyHSD(lm.pro, which = "as.factor(group2)")
 # do proinsulin ratios correlate with biochemical and ECL antibody levels
 corr_pro <- rcorr(as.matrix(allpro[, c( "Pro_pep","gadz","ia2z","mIAA","ZnT8","ICA",
                                         "ECL_GADA","ECL_IA2A","ECL_IAA")])
-                  ,type = "spearman")
+                  ,type = "pearson")
 corr_pro <- flattenCorrMatrix(corr_pro$r, corr_pro$P)
 corr_pro <- corr_pro[corr_pro$row=="Pro_pep",]
 
@@ -713,75 +713,75 @@ Table 1a presents descriptive statistics for demographic and clinical variables 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(t1,caption="Table 1a.  Descriptive statistics.  Asterisks indicate that Fisher's exact test was used instead of the chi-square test due to small expected cell value.")
 ```
-\
+<br>
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(futab,caption="Table 1b.  Descriptive statistics for follow up time by group.")
 ```
-\
+<br>
 
 Table 2b shows the results of the group comparisons for proinsulin ratios, with the T1D and multiple antibody positive groups combined.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(tab_pro2,caption="Table 2b.  Proinsulin ratios.")
 ```
-\
+<br>
 
 After adjusting for age, sex, and BMI, the groups were not significantly different (p=`r pval_final.group`).  Table 3 shows the differences between all pairwise comparisons of groups, using Tukey's HSD test.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(diffs_final.group$`as.factor(group2)`,caption="Table 3.  Pairwise comparisons of least-squares mean proinsulin ratio, adjusted for age, sex, and BMI.")
 ```
-\
+<br>
 
 Table 4 shows the correlations of proinsulin ratios with continuous antibody levels at the timepoint selected for cross-sectional analysis.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(corr_pro,caption="Table 4.  Correlation of proinsulin ratios with antibody levels.")
 ```
-\
+<br>
 
 Table 5a shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts T1D.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(log_t1d,caption="Table 5a.  Logistic regression of the earliest pro-insulin ratio vs. T1D.")
 ```
-\
+<br>
 
 Table 5b shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts T1D, after adjusting for sex, age, and BMI.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(log_t1d_adj,caption="Table 5b.  Logistic regression of the earliest pro-insulin ratio vs. T1D, adjusting for sex, age, and BMI.")
 ```
-\
+<br>
 
 Table 6a shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts IGTT.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(log_igtt,caption="Table 6a.  Logistic regression of the earliest pro-insulin ratio vs. IGTT.")
 ```
-\
+<br>
 
 Table 6b shows the results of the logistic regression testing whether the earliest proinsulin ratio predicts IGTT, after adjusting for sex, age, and BMI.
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(log_igtt_adj,caption="Table 6b.  Logistic regression of the earliest pro-insulin ratio vs. IGTT, adjusting for sex, age, and BMI.")
 ```
-\
+<br>
 
 Table 7 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time.  The trajectories in the three groups were not significantly different (p=`r mixt[4,4]`).
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(mixt,caption="Table 7.  ANOVA table for mixed effects model.")
 ```
-\
+<br>
 
 Table 8 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time, after adjusting for sex, age, and BMI.  The trajectories in the three groups were not significantly different (p=`r mixt_adj[7,4]`).
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(mixt_adj,caption="Table 8.  ANOVA table for mixed effects model, adjusted for sex, age, and BMI.")
 ```
-\
+<br>
 
 Figure 1 shows PI:C ratio over time in the three groups.
 \
@@ -802,14 +802,14 @@ Table 9 shows the results of the mixed model testing whether the groups differ i
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(mix_year_neg_mult_t1d_noslope_t,caption="Table 9.  ANOVA table for mixed effects model, using only antibody negative and multiple antibody positive/T1D groups.")
 ```
-\
+<br>
 
 Table 10 shows the results of the mixed model testing whether the groups differ in the trajectories of proinsulin ratios over time, using only the antibody negative and multiple antibody positive/T1D groups, and after adjustment for sex, age, and BMI.  The trajectories in the two groups were significantly different (p=`r mix_year_neg_mult_t1d_noslope_adj_t[7,4]`).
 
 ```{r, results='asis',tidy=TRUE, echo=FALSE}
 kable(mix_year_neg_mult_t1d_noslope_adj_t,caption="Table 10.  ANOVA table for mixed effects model, using only antibody negative and multiple antibody positive/T1D groups, adjusting for sex, age, and BMI.")
 ```
-\
+<br>
 
 
 Figure 2 shows PI:C ratio over time in the antibody negative and multiple antibody positive/T1D groups.
