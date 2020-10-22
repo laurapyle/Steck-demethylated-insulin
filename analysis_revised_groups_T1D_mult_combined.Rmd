@@ -492,12 +492,12 @@ diffs_final.group <- TukeyHSD(lm.pro, which = "as.factor(group2)")
 # do proinsulin ratios correlate with biochemical and ECL antibody levels
 corr_pro <- rcorr(as.matrix(allpro[, c( "Pro_pep","gadz","ia2z","mIAA","ZnT8","ICA",
                                         "ECL_GADA","ECL_IA2A","ECL_IAA")])
-                  ,type = "pearson")
+                  ,type = "spearman")
 corr_pro <- flattenCorrMatrix(corr_pro$r, corr_pro$P)
 corr_pro <- corr_pro[corr_pro$row=="Pro_pep",]
 
 # write cross-sectional dataset for Taylor
-write.csv(allpro,file="S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\allpro.csv")
+#write.csv(allpro,file="S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors #analysis\\Fourth analysis - demethylated insulin with updated dataset\\Data\\allpro.csv")
 
 # partial correlations adjusted for age, sex, gender
 #blah <- na.omit(remove_all_labels(allpro))
@@ -585,16 +585,15 @@ predlong <- predlong[,-2]
 predlong_neg_mult_t1d <- predlong[predlong$group2=="Negative" | predlong$group2=="T1D/multiple ab pos",]
 
 # this is the original code for the plot
-#test <- predict(mix_year_noslope, level=0, newdata=predlong,asList = TRUE)
-png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_T1D_mult_combined.png")
-p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=group2)) +
-  xlab("Years") + ylab ("PI:C ratio") +
-  coord_cartesian(xlim=c(0,3)) +
-  geom_line(data=predlong, aes(y=predict(mix_year_noslope, level=0, newdata=predlong)),size=2) +
-  labs(colour="Group") +
-  theme_bw(base_size=22) 
-print(p)
-dev.off()
+# png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_T1D_mult_combined.png")
+# p <- ggplot(long, aes(x=year_floor, y=Pro_pep, colour=group2)) +
+#   xlab("Years") + ylab ("PI:C ratio") +
+#   coord_cartesian(xlim=c(0,3)) +
+#   geom_line(data=predlong, aes(y=predict(mix_year_noslope, level=0, newdata=predlong)),size=2) +
+#   labs(colour="Group") +
+#   theme_bw(base_size=22) 
+# print(p)
+# dev.off()
 
 # trying to add subjects back in
 # png("S:\\Shared Projects\\Laura\\BDC\\Projects\\Andrea Steck\\Trialnet progressors analysis\\Fourth analysis - demethylated insulin with updated dataset\\Abstract\\predicted_over_time_with_subjects_T1D_mult_combined.png")
